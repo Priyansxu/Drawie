@@ -150,7 +150,7 @@ const Board = () => {
   }, []);
 
   return (<>
-  <img className="hidden md:block" src="https://i.ibb.co/bXwBtPh/download-removebg-preview.png" width= {120} height={50} alt=""logo/>
+  <img className="hidden absolute md:block" src="https://i.ibb.co/bXwBtPh/download-removebg-preview.png" width= {120} height={50} alt=""logo/>
   <canvas ref={canvasRef} style={{}} ></canvas></>)
 };
 
