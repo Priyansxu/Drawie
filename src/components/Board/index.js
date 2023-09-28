@@ -3,7 +3,7 @@ import { useSelector, useDispatch } from "react-redux";
 import { MENU_ITEMS } from "@/constants";
 import { actionItemClick } from "../../slices/menuSlice";
 import { socket } from "@/socket";
-import Image from 'next/image'
+import Image from "next/image";
 
 const Board = () => {
   const dispatch = useDispatch();
@@ -23,7 +23,7 @@ const Board = () => {
       const URL = canvas.toDataURL();
       const anchor = document.createElement("a");
       anchor.href = URL;
-      anchor.download = "sketch.jpg";
+      anchor.download = "आकृति.jpg";
       anchor.click();
     } else if (
       actionMenuItem === MENU_ITEMS.UNDO ||
@@ -90,7 +90,10 @@ const Board = () => {
     const handleTouchDown = (e) => {
       shouldDraw.current = true;
       beginPath(e.touches[0].clientX, e.touches[0].clientY);
-      socket.emit("beginPath", { x: e.touches[0].clientX, y: e.touches[0].clientY });
+      socket.emit("beginPath", {
+        x: e.touches[0].clientX,
+        y: e.touches[0].clientY,
+      });
     };
     const handleMouseMove = (e) => {
       if (!shouldDraw.current) return;
@@ -101,7 +104,10 @@ const Board = () => {
     const handleTouchMove = (e) => {
       if (!shouldDraw.current) return;
       drawLine(e.touches[0].clientX, e.touches[0].clientY);
-      socket.emit("drawLine", { x: e.touches[0].clientX, y: e.touches[0].clientY });
+      socket.emit("drawLine", {
+        x: e.touches[0].clientX,
+        y: e.touches[0].clientY,
+      });
     };
 
     const handleMouseUp = (e) => {
@@ -149,9 +155,19 @@ const Board = () => {
     };
   }, []);
 
-  return (<>
-  <img className="hidden absolute md:block" src="https://i.ibb.co/bXwBtPh/download-removebg-preview.png" width= {120} height={50} alt=""logo/>
-  <canvas ref={canvasRef} style={{}} ></canvas></>)
+  return (
+    <>
+      <img
+        className='hidden absolute md:block'
+        src='https://i.ibb.co/bXwBtPh/download-removebg-preview.png'
+        width={120}
+        height={50}
+        alt=''
+        logo
+      />
+      <canvas ref={canvasRef} style={{}}></canvas>
+    </>
+  );
 };
 
 export default Board;
