@@ -148,7 +148,7 @@ const Board = () => {
     };
   }, []);
 
-  return <canvas ref={canvasRef} ></canvas>;
+  return <canvas ref={canvasRef} style={{}} ></canvas>;
 };
 
 export default Board;

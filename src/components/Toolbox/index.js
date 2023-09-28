@@ -81,12 +81,13 @@ const Toolbox = () => {
 
       {showBrushToolOption && (
         <div className={styles.toolltem}>
-          <hd className={styles.toolText}> Brush Size</hd>
+          <h6 className={styles.toolText}> Brush Size {size}</h6>
+          
           <div className={styles.itemsContainer}>
             <input
               type='range'
               min={1}
-              max={100}
+              max={500}
               step={1}
               value={size}
               onChange={handleBrushSize}

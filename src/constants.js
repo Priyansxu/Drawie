@@ -5,7 +5,7 @@ const COLORS = {
     BLUE: 'rgb(128, 128, 255)',      // Light blue (a lighter shade of blue)
     ORANGE: 'rgb(255, 192, 128)',    // Light orange (a lighter shade of orange)
     YELLOW: 'rgb(255, 255, 128)',    // Light yellow (a lighter shade of yellow)
-    WHITE: 'rgb(230, 230, 230)'
+    WHITE: 'white'
 }
 
 const MENU_ITEMS = {
