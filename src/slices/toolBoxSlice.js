@@ -28,6 +28,6 @@ export const toolboxSlice = createSlice({
   },
 });
 
-export const { changeColor, changeBrushSize } = toolboxSlice.actions;
+export const { changeColor, changeBrushSize } = toolBoxSlice.actions;
 
-export default toolboxSlice.reducer;
+export default toolBoxSlice.reducer;
