@@ -1,11 +1,11 @@
 const COLORS = {
-    BLACK: 'black',
-    RED: 'red',
-    GREEN: 'green',
-    BLUE: 'blue',
-    ORANGE: 'orange',
-    YELLOW: 'yellow',
-    WHITE: 'white'
+    BLACK: 'rgb(102, 102, 102)',     // Light gray (a lighter shade of black)
+    RED: 'rgb(255, 128, 128)',       // Light red (a lighter shade of red)
+    GREEN: 'rgb(128, 255, 128)',     // Light green (a lighter shade of green)
+    BLUE: 'rgb(128, 128, 255)',      // Light blue (a lighter shade of blue)
+    ORANGE: 'rgb(255, 192, 128)',    // Light orange (a lighter shade of orange)
+    YELLOW: 'rgb(255, 255, 128)',    // Light yellow (a lighter shade of yellow)
+    WHITE: 'rgb(230, 230, 230)'
 }
 
 const MENU_ITEMS = {

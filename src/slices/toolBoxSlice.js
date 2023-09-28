@@ -1,5 +1,5 @@
 import { createSlice } from "@reduxjs/toolkit";
-import { MENU_ITEMS ,COLORS } from "@/constants";
+import { MENU_ITEMS, COLORS } from "@/constants";
 
 const initialState = {
   [MENU_ITEMS.PENCIL]: {
@@ -28,6 +28,6 @@ export const toolboxSlice = createSlice({
   },
 });
 
-export const { changeColor, changeBrushSize } = toolBoxSlice.actions;
+export const { changeColor, changeBrushSize } = toolboxSlice.actions;
 
-export default toolBoxSlice.reducer;
+export default toolboxSlice.reducer;
