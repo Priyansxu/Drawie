@@ -3,6 +3,7 @@ import { useSelector, useDispatch } from "react-redux";
 import { MENU_ITEMS } from "@/constants";
 import { actionItemClick } from "../../slices/menuSlice";
 import { socket } from "@/socket";
+import Image from 'next/image'
 
 const Board = () => {
   const dispatch = useDispatch();
@@ -148,7 +149,9 @@ const Board = () => {
     };
   }, []);
 
-  return <canvas ref={canvasRef} style={{}} ></canvas>;
+  return (<>
+  <img className="hidden md:block" src="https://i.ibb.co/bXwBtPh/download-removebg-preview.png" width= {120} height={50} alt=""logo/>
+  <canvas ref={canvasRef} style={{}} ></canvas></>)
 };
 
 export default Board;

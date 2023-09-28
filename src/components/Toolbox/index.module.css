@@ -1,5 +1,5 @@
 .toolboxContainer {
-    @apply p-5 absolute md:top-1/4 md:left-5 md:h-1/4 left-[80px] bottom-[70px] w-64 rounded-2xl md:rounded-md;
+    @apply p-5 absolute md:top-1/4 md:left-5 md:h-1/4 left-[80px] bottom-[70px]  w-64 rounded-2xl md:rounded-md;
     box-shadow: theme('colors.shadow1');
     border: 1px solid theme('colors.border1');
     background-color: theme('colors.background1');
