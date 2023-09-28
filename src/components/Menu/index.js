@@ -1,7 +1,7 @@
 import { ArrowDownCircle, Eraser, Pencil, Redo, Undo } from "lucide-react";
 import styles from "./index.module.css";
 import { useDispatch } from "react-redux";
-import { menuItemClick } from "@/pages/slices/menuSlice";
+import { menuItemClick,actionItemClick } from "@/pages/slices/menuSlice";
 import { useSelector } from "react-redux";
 import { MENU_ITEMS } from "@/constants";
 import cx from "classnames";
@@ -13,6 +13,10 @@ const Menu = () => {
   const handleClick = (menuItem) => {
     dispatch(menuItemClick(menuItem));
   };
+
+  const handleActionItemClick=(actionItem)=>{
+   dispatch(actionItemClick(actionItem))
+  }
 
   return (
     <div className={styles.menuContainer}>
@@ -30,13 +34,18 @@ const Menu = () => {
         }}>
         <Eraser className={styles.icon} />
       </div>
-      <div className={styles.iconWrapper}>
+      <div className={styles.iconWrapper}
+      onClick={()=>handleActionItemClick(MENU_ITEMS.UNDO)}
+      >
         <Undo className={styles.icon} />
       </div>
-      <div className={styles.iconWrapper}>
+      <div className={styles.iconWrapper}
+       onClick={()=>handleActionItemClick(MENU_ITEMS.REDO)}>
         <Redo className={styles.icon} />
       </div>
-      <div className={styles.iconWrapper}>
+      <div className={styles.iconWrapper}
+       onClick={()=>handleActionItemClick(MENU_ITEMS.DOWNLOAD)}
+      >
         <ArrowDownCircle className={styles.icon} />
       </div>
     </div>
