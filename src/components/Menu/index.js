@@ -56,9 +56,7 @@ const Menu = () => {
       </div>
      
     </div>
-    <button className="absolute right-24 top-12 border-[1px] px-2 bg- rounded-full border-black">
-      try multidraw
-    </button>
+   
     </div>
    
     
