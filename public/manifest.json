@@ -1,0 +1,15 @@
+{
+  "name": "Samvad Setu",
+  "short_name": "Samvad Setu",
+  "theme_color": "#80F",
+  "background_color": "1F1F1F",
+  "display": "standalone",
+  "orientation": "any",
+  "scope": "/",
+  "start_url": "/",
+  "icons": [
+    { "src": "/icons-192.png", "type": "image/png", "sizes": "192x192" },
+    { "src": "/icons-256.png", "type": "image/png", "sizes": "256x256" },
+    { "src": "/icons-512.png", "type": "image/png", "sizes": "512x512" }
+  ]
+}

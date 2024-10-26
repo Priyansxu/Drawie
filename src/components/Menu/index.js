@@ -19,7 +19,8 @@ const Menu = () => {
   };
 
   return (
-    <div className={styles.menuContainer}>
+    <div>
+ <div className={styles.menuContainer}>
       <div
         className={cx(styles.iconWrapper, {
           [styles.active]: activeMenuItem === MENU_ITEMS.PENCIL,
@@ -53,7 +54,14 @@ const Menu = () => {
         onClick={() => handleActionItemClick(MENU_ITEMS.DOWNLOAD)}>
         <ArrowDownCircle className={styles.icon} />
       </div>
+     
     </div>
+    <button className="absolute right-24 top-12 border-[1px] px-2 bg- rounded-full border-black">
+      try multidraw
+    </button>
+    </div>
+   
+    
   );
 };
 
