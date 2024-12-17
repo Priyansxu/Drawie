@@ -2,9 +2,8 @@ import { ArrowDownCircle, Eraser, Pencil, Redo, Undo } from "lucide-react";
 import { useDispatch, useSelector } from "react-redux";
 import { menuItemClick, actionItemClick } from "@/slices/menuSlice";
 import { MENU_ITEMS } from "@/constants";
-import cx from "classnames";
 
-const Menu = () => {
+export default function Menu() {
   const activeMenuItem = useSelector((store) => store.menu.activeMenuItem);
   const dispatch = useDispatch();
 
@@ -19,20 +18,18 @@ const Menu = () => {
   return (
     <div className="absolute px-5 py-1 flex justify-between md:w-1/4 left-1/2 top-10 rounded-xl md:rounded-md border border-border1 bg-background1 shadow-shadow1 transform -translate-x-1/2">
       <div
-        className={cx(
-          "cursor-pointer flex justify-center items-center h-10 w-10 rounded-md",
-          { "bg-text2": activeMenuItem === MENU_ITEMS.PENCIL }
-        )}
+        className={`cursor-pointer flex justify-center items-center h-10 w-10 rounded-md ${
+          activeMenuItem === MENU_ITEMS.PENCIL ? "bg-text2" : ""
+        }`}
         onClick={() => handleClick(MENU_ITEMS.PENCIL)}
       >
         <Pencil className="text-text1 text-[20px]" />
       </div>
 
       <div
-        className={cx(
-          "cursor-pointer flex justify-center items-center h-10 w-10 rounded-md",
-          { "bg-text2": activeMenuItem === MENU_ITEMS.ERASER }
-        )}
+        className={`cursor-pointer flex justify-center items-center h-10 w-10 rounded-md ${
+          activeMenuItem === MENU_ITEMS.ERASER ? "bg-text2" : ""
+        }`}
         onClick={() => handleClick(MENU_ITEMS.ERASER)}
       >
         <Eraser className="text-text1 text-[20px]" />
@@ -60,6 +57,4 @@ const Menu = () => {
       </div>
     </div>
   );
-};
-
-export default Menu;
+}
