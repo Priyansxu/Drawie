@@ -1,96 +1,64 @@
 import { COLORS, MENU_ITEMS } from "@/constants";
-import styles from "./index.module.css";
 import { useSelector, useDispatch } from "react-redux";
 import { changeBrushSize, changeColor } from "@/slices/toolBoxSlice";
 import cx from "classnames";
 import { socket } from "@/socket";
+
 const Toolbox = () => {
   const dispatch = useDispatch();
   const activeMenuItem = useSelector((store) => store.menu.activeMenuItem);
   const { color, size } = useSelector((store) => store.tool[activeMenuItem]);
+
   const showStrokeToolOption = activeMenuItem === MENU_ITEMS.PENCIL;
   const showBrushToolOption =
     activeMenuItem === MENU_ITEMS.PENCIL ||
     activeMenuItem === MENU_ITEMS.ERASER;
+
   const handleBrushSize = (e) => {
     dispatch(changeBrushSize({ item: activeMenuItem, size: e.target.value }));
     socket.emit("changeConfig", { color, size: e.target.value });
   };
+
   const handleColor = (newColor) => {
     dispatch(changeColor({ item: activeMenuItem, color: newColor }));
     socket.emit("changeConfig", { color: newColor, size });
   };
+
   return (
-    <div className={styles.toolboxContainer}>
+    <div className="p-5 absolute md:top-1/4 md:left-5 md:h-1/4 left-[80px] bottom-[70px] w-64 rounded-2xl md:rounded-md border border-border1 bg-background1 shadow-shadow1">
       {showStrokeToolOption && (
-        <div className={styles.toolItem}>
-          <hd className={styles.toolText}>Stroke Color</hd>
-          <div className={styles.itemContainer}>
-            <div
-              className={cx(styles.colorBox, {
-                [styles.active]: color === COLORS.BLACK,
-              })}
-              style={{ backgroundColor: COLORS.BLACK }}
-              onClick={() => handleColor(COLORS.BLACK)}
-            />
-            <div
-              className={cx(styles.colorBox, {
-                [styles.active]: color === COLORS.BLUE,
-              })}
-              style={{ backgroundColor: COLORS.BLUE }}
-              onClick={() => handleColor(COLORS.BLUE)}
-            />
-            <div
-              className={cx(styles.colorBox, {
-                [styles.active]: color === COLORS.RED,
-              })}
-              style={{ backgroundColor: COLORS.RED }}
-              onClick={() => handleColor(COLORS.RED)}
-            />
-            <div
-              className={cx(styles.colorBox, {
-                [styles.active]: color === COLORS.GREEN,
-              })}
-              style={{ backgroundColor: COLORS.GREEN }}
-              onClick={() => handleColor(COLORS.GREEN)}
-            />
-            <div
-              className={cx(styles.colorBox, {
-                [styles.active]: color === COLORS.ORANGE,
-              })}
-              style={{ backgroundColor: COLORS.ORANGE }}
-              onClick={() => handleColor(COLORS.ORANGE)}
-            />
-            <div
-              className={cx(styles.colorBox, {
-                [styles.active]: color === COLORS.YELLOW,
-              })}
-              style={{ backgroundColor: COLORS.YELLOW }}
-              onClick={() => handleColor(COLORS.YELLOW)}
-            />
-            <div
-              className={cx(styles.colorBox, {
-                [styles.active]: color === COLORS.WHITE,
-              })}
-              style={{ backgroundColor: COLORS.WHITE }}
-              onClick={() => handleColor(COLORS.WHITE)}
-            />
+        <div className="mb-5">
+          <h6 className="text-[11px] text-text1">Stroke Color</h6>
+          <div className="flex justify-between mt-2">
+            {Object.values(COLORS).map((currentColor) => (
+              <div
+                key={currentColor}
+                className={cx(
+                  "h-5 w-5 mr-1 rounded-sm cursor-pointer",
+                  {
+                    "border-[1.5px] border-border2 shadow-shadow2": color === currentColor,
+                  }
+                )}
+                style={{ backgroundColor: currentColor }}
+                onClick={() => handleColor(currentColor)}
+              />
+            ))}
           </div>
         </div>
       )}
 
       {showBrushToolOption && (
-        <div className={styles.toolltem}>
-          <h6 className={styles.toolText}> Brush Size {size}</h6>
-          
-          <div className={styles.itemsContainer}>
+        <div className="mb-5">
+          <h6 className="text-[11px] text-text1">Brush Size {size}</h6>
+          <div className="mt-2">
             <input
-              type='range'
+              type="range"
               min={1}
               max={500}
               step={1}
               value={size}
               onChange={handleBrushSize}
+              className="w-full"
             />
           </div>
         </div>
