@@ -1,17 +1,17 @@
-import React, { useState, useRef, useEffect, useCallback } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { useSelector, useDispatch } from "react-redux";
 import { COLORS, MENU_ITEMS } from "@/constants";
 import { changeBrushSize, changeColor } from "@/slices/toolBoxSlice";
 import { socket } from "@/socket";
-import { Grip, Minimize2, Maximize2 } from 'lucide-react';
+import { Move, Minimize2, Maximize2 } from 'lucide-react';
 
-export default function Toolbox() {
+const Toolbox = () => {
   const dispatch = useDispatch();
   const [isDragging, setIsDragging] = useState(false);
   const [position, setPosition] = useState({ x: 0, y: 0 });
   const [isMinimized, setIsMinimized] = useState(false);
   const toolboxRef = useRef(null);
-  const dragRef = useRef(null);
+  const moveHandleRef = useRef(null);
 
   const activeMenuItem = useSelector((store) => store.menu.activeMenuItem);
   const { color, size } = useSelector((store) => store.tool[activeMenuItem]);
@@ -20,13 +20,25 @@ export default function Toolbox() {
   const showBrushToolOption =
     activeMenuItem === MENU_ITEMS.PENCIL || activeMenuItem === MENU_ITEMS.ERASER;
 
+  // Initial positioning at bottom middle with boundary constraints
   useEffect(() => {
     const updatePosition = () => {
       if (toolboxRef.current) {
         const windowWidth = window.innerWidth;
+        const windowHeight = window.innerHeight;
         const toolboxWidth = toolboxRef.current.offsetWidth;
-        const initialX = (windowWidth - toolboxWidth) / 2;
-        const initialY = window.innerHeight - 120; // 120px from bottom
+        const toolboxHeight = toolboxRef.current.offsetHeight;
+
+        const initialX = Math.max(0, Math.min(
+          (windowWidth - toolboxWidth) / 2, 
+          windowWidth - toolboxWidth
+        ));
+        
+        const initialY = Math.max(0, Math.min(
+          windowHeight - toolboxHeight - 50, // 50px from bottom
+          windowHeight - toolboxHeight
+        ));
+
         setPosition({ x: initialX, y: initialY });
       }
     };
@@ -36,13 +48,27 @@ export default function Toolbox() {
     return () => window.removeEventListener('resize', updatePosition);
   }, []);
 
+  // Drag functionality with boundary constraints
   useEffect(() => {
     const handleMouseMove = (e) => {
-      if (isDragging && dragRef.current) {
-        setPosition({
-          x: e.clientX - dragRef.current.offsetWidth / 2,
-          y: e.clientY - dragRef.current.offsetHeight / 2
-        });
+      if (isDragging && toolboxRef.current) {
+        const windowWidth = window.innerWidth;
+        const windowHeight = window.innerHeight;
+        const toolboxWidth = toolboxRef.current.offsetWidth;
+        const toolboxHeight = toolboxRef.current.offsetHeight;
+
+        // Calculate new position with boundary constraints
+        const newX = Math.max(0, Math.min(
+          e.clientX - toolboxWidth / 2,
+          windowWidth - toolboxWidth
+        ));
+
+        const newY = Math.max(0, Math.min(
+          e.clientY - 20, // 20px from top of move handle
+          windowHeight - toolboxHeight
+        ));
+
+        setPosition({ x: newX, y: newY });
       }
     };
 
@@ -61,44 +87,43 @@ export default function Toolbox() {
     };
   }, [isDragging]);
 
-  const handleBrushSize = useCallback((e) => {
+  const handleBrushSize = (e) => {
     dispatch(changeBrushSize({ item: activeMenuItem, size: e.target.value }));
     socket.emit("changeConfig", { color, size: e.target.value });
-  }, [dispatch, activeMenuItem, color, size]);
+  };
 
-  const handleColor = useCallback((newColor) => {
+  const handleColor = (newColor) => {
     dispatch(changeColor({ item: activeMenuItem, color: newColor }));
     socket.emit("changeConfig", { color: newColor, size });
-  }, [dispatch, activeMenuItem, color, size]);
-
-  const handleMouseDown = (e) => {
-    if (e.target === dragRef.current) {
-      setIsDragging(true);
-    }
   };
 
   return (
     <div 
       ref={toolboxRef}
-      className={`fixed z-50 transition-all duration-300 ease-in-out shadow-lg rounded-xl bg-white/90 backdrop-blur-sm border border-gray-200 ${
-        isMinimized ? 'h-12 overflow-hidden' : 'h-auto'
-      }`}
+      className={`fixed z-50 transition-all duration-300 ease-in-out 
+        shadow-lg rounded-xl bg-white/90 backdrop-blur-sm border border-gray-200 
+        ${isMinimized ? 'h-12 overflow-hidden' : 'h-auto'}`}
       style={{ 
         transform: `translate(${position.x}px, ${position.y}px)`,
-        width: '280px'
+        width: '280px',
+        maxWidth: 'calc(100vw - 40px)', // Prevent overflow on small screens
       }}
     >
-      {/* Drag Handle */}
+      {/* Move Handle */}
       <div 
-        ref={dragRef}
-        onMouseDown={handleMouseDown}
-        className="flex items-center justify-between p-2 cursor-move bg-gray-100 rounded-t-xl"
+        ref={moveHandleRef}
+        onMouseDown={(e) => {
+          setIsDragging(true);
+          e.preventDefault();
+        }}
+        className="flex items-center justify-between p-2 cursor-move bg-gray-100 rounded-t-xl select-none"
       >
-        <Grip className="text-gray-500" size={20} />
+        <Move className="text-gray-500 cursor-move" size={20} />
         <div className="flex items-center space-x-2">
           <button 
             onClick={() => setIsMinimized(!isMinimized)}
             className="hover:bg-gray-200 rounded-full p-1"
+            aria-label={isMinimized ? "Expand toolbar" : "Minimize toolbar"}
           >
             {isMinimized ? <Maximize2 size={16} /> : <Minimize2 size={16} />}
           </button>
@@ -107,17 +132,16 @@ export default function Toolbox() {
 
       {/* Toolbar Content */}
       {!isMinimized && (
-        <div className="p-4">
+        <div className="p-4 max-w-full overflow-x-auto">
           {showStrokeToolOption && (
             <div className="mb-4">
               <h6 className="text-xs text-gray-600 mb-2">Stroke Color</h6>
-              <div className="flex justify-between">
+              <div className="flex justify-between space-x-1">
                 {Object.values(COLORS).map((clr) => (
                   <div
                     key={clr}
-                    className={`h-6 w-6 rounded-full cursor-pointer transition-all ${
-                      color === clr ? 'ring-2 ring-blue-500 scale-110' : 'hover:scale-110'
-                    }`}
+                    className={`h-6 w-6 rounded-full cursor-pointer transition-all 
+                      ${color === clr ? 'ring-2 ring-blue-500 scale-110' : 'hover:scale-110'}`}
                     style={{ backgroundColor: clr }}
                     onClick={() => handleColor(clr)}
                   />
@@ -146,4 +170,6 @@ export default function Toolbox() {
       )}
     </div>
   );
-}
+};
+
+export default Toolbox;
