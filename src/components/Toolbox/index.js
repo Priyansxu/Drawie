@@ -1,18 +1,16 @@
 import { COLORS, MENU_ITEMS } from "@/constants";
 import { useSelector, useDispatch } from "react-redux";
 import { changeBrushSize, changeColor } from "@/slices/toolBoxSlice";
-import cx from "classnames";
 import { socket } from "@/socket";
 
-const Toolbox = () => {
+export default function Toolbox() {
   const dispatch = useDispatch();
   const activeMenuItem = useSelector((store) => store.menu.activeMenuItem);
   const { color, size } = useSelector((store) => store.tool[activeMenuItem]);
 
   const showStrokeToolOption = activeMenuItem === MENU_ITEMS.PENCIL;
   const showBrushToolOption =
-    activeMenuItem === MENU_ITEMS.PENCIL ||
-    activeMenuItem === MENU_ITEMS.ERASER;
+    activeMenuItem === MENU_ITEMS.PENCIL || activeMenuItem === MENU_ITEMS.ERASER;
 
   const handleBrushSize = (e) => {
     dispatch(changeBrushSize({ item: activeMenuItem, size: e.target.value }));
@@ -25,22 +23,19 @@ const Toolbox = () => {
   };
 
   return (
-    <div className="p-5 absolute md:top-1/4 md:left-5 md:h-1/4 left-[80px] bottom-[70px] w-64 rounded-2xl md:rounded-md border border-border1 bg-background1 shadow-shadow1">
+    <div className="p-5 absolute md:top-1/4 md:left-5 md:h-1/4 left-[80px] bottom-[70px] w-64 rounded-2xl md:rounded-md border border-border1 shadow-shadow1 bg-background1">
       {showStrokeToolOption && (
         <div className="mb-5">
           <h6 className="text-[11px] text-text1">Stroke Color</h6>
           <div className="flex justify-between mt-2">
-            {Object.values(COLORS).map((currentColor) => (
+            {Object.values(COLORS).map((clr) => (
               <div
-                key={currentColor}
-                className={cx(
-                  "h-5 w-5 mr-1 rounded-sm cursor-pointer",
-                  {
-                    "border-[1.5px] border-border2 shadow-shadow2": color === currentColor,
-                  }
-                )}
-                style={{ backgroundColor: currentColor }}
-                onClick={() => handleColor(currentColor)}
+                key={clr}
+                className={`h-5 w-5 mr-1 rounded-sm cursor-pointer ${
+                  color === clr ? "border-[1.5px] border-border2 shadow-shadow2" : ""
+                }`}
+                style={{ backgroundColor: clr }}
+                onClick={() => handleColor(clr)}
               />
             ))}
           </div>
@@ -58,13 +53,11 @@ const Toolbox = () => {
               step={1}
               value={size}
               onChange={handleBrushSize}
-              className="w-full"
+              className="w-full cursor-pointer"
             />
           </div>
         </div>
       )}
     </div>
   );
-};
-
-export default Toolbox;
+}
