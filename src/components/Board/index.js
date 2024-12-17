@@ -10,10 +10,10 @@ export default function Board() {
   const drawHistory = useRef([]);
   const historyPointer = useRef(0);
   const shouldDraw = useRef(false);
+
   const { activeMenuItem, actionMenuItem } = useSelector((state) => state.menu);
   const { color, size } = useSelector((state) => state.tool[activeMenuItem]);
 
-  // Handle Actions (Download, Undo, Redo)
   useEffect(() => {
     if (!canvasRef.current) return;
     const canvas = canvasRef.current;
@@ -25,41 +25,29 @@ export default function Board() {
       anchor.href = URL;
       anchor.download = "आकृति.jpg";
       anchor.click();
-    } else if (actionMenuItem === MENU_ITEMS.UNDO || actionMenuItem === MENU_ITEMS.REDO) {
-      if (historyPointer.current > 0 && actionMenuItem === MENU_ITEMS.UNDO) {
+    } else if (
+      actionMenuItem === MENU_ITEMS.UNDO ||
+      actionMenuItem === MENU_ITEMS.REDO
+    ) {
+      if (historyPointer.current > 0 && actionMenuItem === MENU_ITEMS.UNDO)
         historyPointer.current -= 1;
-      }
-      if (historyPointer.current < drawHistory.current.length - 1 && actionMenuItem === MENU_ITEMS.REDO) {
+      if (
+        historyPointer.current < drawHistory.current.length - 1 &&
+        actionMenuItem === MENU_ITEMS.REDO
+      )
         historyPointer.current += 1;
-      }
       const imageData = drawHistory.current[historyPointer.current];
       context.putImageData(imageData, 0, 0);
     }
+
     dispatch(actionItemClick(null));
   }, [actionMenuItem, dispatch]);
 
-  // Handle Brush Config Change
-  useEffect(() => {
-    if (!canvasRef.current) return;
-    const context = canvasRef.current.getContext("2d");
-
-    const applyConfig = (config) => {
-      context.strokeStyle = config.color;
-      context.lineWidth = config.size;
-    };
-
-    applyConfig({ color, size });
-
-    const handleConfigChange = (config) => applyConfig(config);
-    socket.on("changeConfig", handleConfigChange);
-
-    return () => socket.off("changeConfig", handleConfigChange);
-  }, [color, size]);
-
-  // Drawing Logic
   useLayoutEffect(() => {
     const canvas = canvasRef.current;
     const context = canvas.getContext("2d");
+
+    // Set canvas to full-screen size
     canvas.width = window.innerWidth;
     canvas.height = window.innerHeight;
 
@@ -73,48 +61,58 @@ export default function Board() {
       context.stroke();
     };
 
-    const saveState = () => {
-      const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
-      drawHistory.current.push(imageData);
-      historyPointer.current = drawHistory.current.length - 1;
-    };
-
-    // Event Handlers
     const handleMouseDown = (e) => {
       shouldDraw.current = true;
       beginPath(e.clientX, e.clientY);
       socket.emit("beginPath", { x: e.clientX, y: e.clientY });
     };
+
     const handleMouseMove = (e) => {
       if (!shouldDraw.current) return;
       drawLine(e.clientX, e.clientY);
       socket.emit("drawLine", { x: e.clientX, y: e.clientY });
     };
+
     const handleMouseUp = () => {
       shouldDraw.current = false;
-      saveState();
+      const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
+      drawHistory.current.push(imageData);
+      historyPointer.current = drawHistory.current.length - 1;
     };
 
-    // Socket Handlers
-    const handleSocketBegin = (path) => beginPath(path.x, path.y);
-    const handleSocketDraw = (path) => drawLine(path.x, path.y);
+    const handleBeginPath = (path) => {
+      beginPath(path.x, path.y);
+    };
 
-    // Add Listeners
+    const handleDrawLine = (path) => {
+      drawLine(path.x, path.y);
+    };
+
+    // Add mouse event listeners
     canvas.addEventListener("mousedown", handleMouseDown);
     canvas.addEventListener("mousemove", handleMouseMove);
     canvas.addEventListener("mouseup", handleMouseUp);
-    socket.on("beginPath", handleSocketBegin);
-    socket.on("drawLine", handleSocketDraw);
+
+    // Socket listeners
+    socket.on("beginPath", handleBeginPath);
+    socket.on("drawLine", handleDrawLine);
 
     return () => {
-      // Clean up Listeners
       canvas.removeEventListener("mousedown", handleMouseDown);
       canvas.removeEventListener("mousemove", handleMouseMove);
       canvas.removeEventListener("mouseup", handleMouseUp);
-      socket.off("beginPath", handleSocketBegin);
-      socket.off("drawLine", handleSocketDraw);
+
+      socket.off("beginPath", handleBeginPath);
+      socket.off("drawLine", handleDrawLine);
     };
   }, []);
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    const context = canvas.getContext("2d");
+    context.strokeStyle = color;
+    context.lineWidth = size;
+  }, [color, size]);
 
   return (
     <>
