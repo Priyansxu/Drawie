@@ -1,16 +1,16 @@
 import { useEffect, useRef, useLayoutEffect } from "react";
 import { useSelector, useDispatch } from "react-redux";
 import { MENU_ITEMS } from "@/constants";
-import { actionItemClick } from "@/slices/menuSlice";
+import { actionItemClick } from "../../slices/menuSlice";
 import { socket } from "@/socket";
+import Image from "next/image";
 
-export default function Board() {
+const Board = () => {
   const dispatch = useDispatch();
   const canvasRef = useRef(null);
   const drawHistory = useRef([]);
   const historyPointer = useRef(0);
   const shouldDraw = useRef(false);
-
   const { activeMenuItem, actionMenuItem } = useSelector((state) => state.menu);
   const { color, size } = useSelector((state) => state.tool[activeMenuItem]);
 
@@ -39,15 +39,37 @@ export default function Board() {
       const imageData = drawHistory.current[historyPointer.current];
       context.putImageData(imageData, 0, 0);
     }
-
     dispatch(actionItemClick(null));
   }, [actionMenuItem, dispatch]);
 
-  useLayoutEffect(() => {
+  useEffect(() => {
+    if (!canvasRef.current) return;
     const canvas = canvasRef.current;
     const context = canvas.getContext("2d");
 
-    // Set canvas to full-screen size
+    const changeConfig = (color, size) => {
+      context.strokeStyle = color;
+      context.lineWidth = size;
+    };
+
+    const handleChangeConfig = (config) => {
+      console.log("config", config);
+      changeConfig(config.color, config.size);
+    };
+    changeConfig(color, size);
+    socket.on("changeConfig", handleChangeConfig);
+
+    return () => {
+      socket.off("changeConfig", handleChangeConfig);
+    };
+  }, [color, size]);
+
+  // before browser pain
+  useLayoutEffect(() => {
+    if (!canvasRef.current) return;
+    const canvas = canvasRef.current;
+    const context = canvas.getContext("2d");
+
     canvas.width = window.innerWidth;
     canvas.height = window.innerHeight;
 
@@ -60,20 +82,41 @@ export default function Board() {
       context.lineTo(x, y);
       context.stroke();
     };
-
     const handleMouseDown = (e) => {
       shouldDraw.current = true;
       beginPath(e.clientX, e.clientY);
       socket.emit("beginPath", { x: e.clientX, y: e.clientY });
     };
-
+    const handleTouchDown = (e) => {
+      shouldDraw.current = true;
+      beginPath(e.touches[0].clientX, e.touches[0].clientY);
+      socket.emit("beginPath", {
+        x: e.touches[0].clientX,
+        y: e.touches[0].clientY,
+      });
+    };
     const handleMouseMove = (e) => {
       if (!shouldDraw.current) return;
       drawLine(e.clientX, e.clientY);
       socket.emit("drawLine", { x: e.clientX, y: e.clientY });
     };
 
-    const handleMouseUp = () => {
+    const handleTouchMove = (e) => {
+      if (!shouldDraw.current) return;
+      drawLine(e.touches[0].clientX, e.touches[0].clientY);
+      socket.emit("drawLine", {
+        x: e.touches[0].clientX,
+        y: e.touches[0].clientY,
+      });
+    };
+
+    const handleMouseUp = (e) => {
+      shouldDraw.current = false;
+      const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
+      drawHistory.current.push(imageData);
+      historyPointer.current = drawHistory.current.length - 1;
+    };
+    const handleTouchUp = (e) => {
       shouldDraw.current = false;
       const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
       drawHistory.current.push(imageData);
@@ -88,12 +131,13 @@ export default function Board() {
       drawLine(path.x, path.y);
     };
 
-    // Add mouse event listeners
     canvas.addEventListener("mousedown", handleMouseDown);
     canvas.addEventListener("mousemove", handleMouseMove);
     canvas.addEventListener("mouseup", handleMouseUp);
+    canvas.addEventListener("touchstart", handleTouchDown);
+    canvas.addEventListener("touchmove", handleTouchMove);
+    canvas.addEventListener("touchend", handleTouchUp);
 
-    // Socket listeners
     socket.on("beginPath", handleBeginPath);
     socket.on("drawLine", handleDrawLine);
 
@@ -102,28 +146,28 @@ export default function Board() {
       canvas.removeEventListener("mousemove", handleMouseMove);
       canvas.removeEventListener("mouseup", handleMouseUp);
 
+      canvas.removeEventListener("touchstart", handleTouchDown);
+      canvas.removeEventListener("touchmove", handleTouchMove);
+      canvas.removeEventListener("touchend", handleTouchUp);
+
       socket.off("beginPath", handleBeginPath);
       socket.off("drawLine", handleDrawLine);
     };
   }, []);
 
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    const context = canvas.getContext("2d");
-    context.strokeStyle = color;
-    context.lineWidth = size;
-  }, [color, size]);
-
   return (
     <>
       <img
-        className="hidden absolute md:block"
-        src="https://i.ibb.co/bXwBtPh/download-removebg-preview.png"
+        className='hidden absolute md:block'
+        src='https://i.ibb.co/bXwBtPh/download-removebg-preview.png'
         width={120}
         height={50}
-        alt="logo"
+        alt=''
+        logo
       />
-      <canvas ref={canvasRef} />
+      <canvas ref={canvasRef} style={{}}></canvas>
     </>
   );
-}
+};
+
+export default Board;
