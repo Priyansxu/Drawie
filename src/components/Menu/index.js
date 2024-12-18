@@ -32,28 +32,28 @@ export default function Menu() {
         }`}
         onClick={() => handleClick(MENU_ITEMS.ERASER)}
       >
-        <Eraser className="text-text1 text-[20px]" />
+        <Eraser className="text-gray-200 text-[10px]" />
       </div>
 
       <div
         className="cursor-pointer flex justify-center items-center h-10 w-10 rounded-md"
         onClick={() => handleActionItemClick(MENU_ITEMS.UNDO)}
       >
-        <Undo className="text-text1 text-[20px]" />
+        <Undo className="text-gray-200 text-[10px]" />
       </div>
 
       <div
         className="cursor-pointer flex justify-center items-center h-10 w-10 rounded-md"
         onClick={() => handleActionItemClick(MENU_ITEMS.REDO)}
       >
-        <Redo className="text-text1 text-[20px]" />
+        <Redo className="text-gray-200 text-[10px]" />
       </div>
 
       <div
         className="cursor-pointer flex justify-center items-center h-10 w-10 rounded-md"
         onClick={() => handleActionItemClick(MENU_ITEMS.DOWNLOAD)}
       >
-        <ArrowDownCircle className="text-text1 text-[20px]" />
+        <ArrowDownCircle className="text-gray-200 text-[10px]" />
       </div>
     </div>
   );
