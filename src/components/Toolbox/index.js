@@ -29,14 +29,14 @@ export default function Toolbox() {
   return (
     <div 
       className={`absolute bottom-2 left-1/2 transform -translate-x-1/2 
-        px-5 py-4 md:max-w-full mx-4 bg-background1 border border-border1 
+        px-5 py-4 md:max-w-full bg-background1 border border-border1 
         rounded-xl shadow-shadow1`}
     >
       <div className="flex items-center justify-between mb-4">
         <h4 className="md:ml-4 text-sm font-bold text-text1">Toolbox</h4>
         <button 
           onClick={() => setIsMinimized(!isMinimized)} 
-          className="flex items-center justify-center p-2 space-x-4 rounded-md hover:bg-gray-200"
+          className="flex items-center justify-center px-2 rounded-md hover:bg-gray-200"
         >
           {isMinimized ? <Maximize2 className="right-4" size={16} /> : <Minimize2 className="right-4" size={16} />}
         </button>
