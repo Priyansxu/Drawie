@@ -11,7 +11,8 @@ export default function Board() {
   const drawHistory = useRef([]);
   const historyPointer = useRef(0);
   const shouldDraw = useRef(false);
-  const lastPos = useRef({ x: 0, y: 0 });
+  const lastPos = useRef({ x: 0, y: 0 }); 
+  const pressureSmoothness = useRef([0, 0, 0]); // Enhanced smoothing
   const { activeMenuItem, actionMenuItem } = useSelector((state) => state.menu);
   const { color, size } = useSelector((state) => state.tool[activeMenuItem]);
 
@@ -24,7 +25,7 @@ export default function Board() {
       const URL = canvas.toDataURL();
       const anchor = document.createElement("a");
       anchor.href = URL;
-      anchor.download = "drawing.jpg";
+      anchor.download = "आकृति.jpg";
       anchor.click();
     } else if (
       actionMenuItem === MENU_ITEMS.UNDO ||
@@ -43,49 +44,107 @@ export default function Board() {
     dispatch(actionItemClick(null));
   }, [actionMenuItem, dispatch]);
 
-  useLayoutEffect(() => {
+  useEffect(() => {
     if (!canvasRef.current) return;
-
     const canvas = canvasRef.current;
     const context = canvas.getContext("2d");
-    
-    // Set up high-resolution canvas
-    const scale = window.devicePixelRatio; 
-    canvas.width = window.innerWidth * scale; 
-    canvas.height = window.innerHeight * scale; 
-    context.scale(scale, scale); 
+
+    const changeConfig = (color, size) => {
+      context.strokeStyle = color;
+      context.lineWidth = size;
+      context.lineCap = 'round';
+      context.lineJoin = 'round';
+    };
+
+    const handleChangeConfig = (config) => {
+      console.log("config", config);
+      changeConfig(config.color, config.size);
+    };
+    changeConfig(color, size);
+    socket.on("changeConfig", handleChangeConfig);
+
+    return () => {
+      socket.off("changeConfig", handleChangeConfig);
+    };
+  }, [color, size]);
+
+  useLayoutEffect(() => {
+    if (!canvasRef.current) return;
+    const canvas = canvasRef.current;
+    const context = canvas.getContext("2d");
+
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
 
     const beginPath = (x, y) => {
       context.beginPath();
-      context.moveTo(Math.floor(x), Math.floor(y)); // Use integer coordinates
+      context.moveTo(x, y);
       lastPos.current = { x, y };
+      pressureSmoothness.current = [x, x, x]; // Reset smoothing
     };
 
-    const drawSmoothLine = (x1, y1, x2, y2) => {
+    const smoothInterpolate = (points) => {
+      const [x1, x2, x3] = points;
+      // Use a quadratic smoothing algorithm
+      return (x1 + x2 * 2 + x3) / 4;
+    };
+
+    const drawSuperSmoothLine = (x1, y1, x2, y2) => {
       context.beginPath();
-      context.moveTo(Math.floor(x1), Math.floor(y1));
-      const cpX = (x1 + x2) / 2; // Control point for curve
-      const cpY = (y1 + y2) / 2;
-      context.quadraticCurveTo(cpX, cpY, Math.floor(x2), Math.floor(y2));
+      context.moveTo(x1, y1);
+
+      // Update smoothness tracking
+      pressureSmoothness.current.push(x2);
+      pressureSmoothness.current.shift();
+
+      // Smoothly interpolate x and y
+      const smoothX = smoothInterpolate(pressureSmoothness.current);
+      const smoothY = y2;
+
+      // More advanced Bézier curve for ultra-smooth drawing
+      const cp1x = x1 + (smoothX - x1) * 0.25;
+      const cp1y = y1 + (smoothY - y1) * 0.25;
+      const cp2x = x1 + (smoothX - x1) * 0.75;
+      const cp2y = y1 + (smoothY - y1) * 0.75;
+
+      context.bezierCurveTo(cp1x, cp1y, cp2x, cp2y, smoothX, smoothY);
       context.stroke();
     };
 
     const drawLine = (x, y) => {
-      drawSmoothLine(lastPos.current.x, lastPos.current.y, x, y);
-      lastPos.current = { x: x, y: y }; // Update last position
+      drawSuperSmoothLine(lastPos.current.x, lastPos.current.y, x, y);
+      lastPos.current = { x, y };
     };
 
     const handleMouseDown = (e) => {
       shouldDraw.current = true;
-      beginPath(e.clientX / scale, e.clientY / scale); // Adjust for scaling
-      socket.emit("beginPath", { x: e.clientX / scale, y: e.clientY / scale });
+      beginPath(e.clientX, e.clientY);
+      socket.emit("beginPath", { x: e.clientX, y: e.clientY });
     };
 
-    const handleMouseMove = throttle((e) => {
+    const handleTouchDown = (e) => {
+      shouldDraw.current = true;
+      beginPath(e.touches[0].clientX, e.touches[0].clientY);
+      socket.emit("beginPath", {
+        x: e.touches[0].clientX,
+        y: e.touches[0].clientY,
+      });
+    };
+
+    const handleMouseMove = (e) => {
       if (!shouldDraw.current) return;
-      drawLine(e.clientX / scale, e.clientY / scale); // Adjust for scaling
-      socket.emit("drawLine", { x: e.clientX / scale, y: e.clientY / scale });
-    }, 16);
+      drawLine(e.clientX, e.clientY);
+      socket.emit("drawLine", { x: e.clientX, y: e.clientY });
+    };
+
+    const handleTouchMove = (e) => {
+      if (!shouldDraw.current) return;
+      drawLine(e.touches[0].clientX, e.touches[0].clientY);
+      socket.emit("drawLine", {
+        x: e.touches[0].clientX,
+        y: e.touches[0].clientY,
+      });
+    };
 
     const handleMouseUp = () => {
       shouldDraw.current = false;
@@ -94,32 +153,56 @@ export default function Board() {
       historyPointer.current = drawHistory.current.length - 1;
     };
 
-    // Attach event listeners to the canvas
+    const handleTouchUp = () => {
+      shouldDraw.current = false;
+      const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
+      drawHistory.current.push(imageData);
+      historyPointer.current = drawHistory.current.length - 1;
+    };
+
+    const handleBeginPath = (path) => {
+      beginPath(path.x, path.y);
+    };
+
+    const handleDrawLine = (path) => {
+      drawLine(path.x, path.y);
+    };
+
     canvas.addEventListener("mousedown", handleMouseDown);
-    
     canvas.addEventListener("mousemove", handleMouseMove);
-    
     canvas.addEventListener("mouseup", handleMouseUp);
+    canvas.addEventListener("touchstart", handleTouchDown);
+    canvas.addEventListener("touchmove", handleTouchMove);
+    canvas.addEventListener("touchend", handleTouchUp);
 
-   return () => {
-     // Cleanup event listeners on component unmount
-     canvas.removeEventListener("mousedown", handleMouseDown);
-     canvas.removeEventListener("mousemove", handleMouseMove);
-     canvas.removeEventListener("mouseup", handleMouseUp);
-   };
- }, []);
+    socket.on("beginPath", handleBeginPath);
+    socket.on("drawLine", handleDrawLine);
 
- return (
-   <>
-     <Image
-       className="hidden absolute md:block"
-       src="https://i.ibb.co/bXwBtPh/download-removebg-preview.png"
-       width={120}
-       height={50}
-       alt=""
-       logo
-     />
-     <canvas ref={canvasRef} style={{}}></canvas>
-   </>
- );
+    return () => {
+      canvas.removeEventListener("mousedown", handleMouseDown);
+      canvas.removeEventListener("mousemove", handleMouseMove);
+      canvas.removeEventListener("mouseup", handleMouseUp);
+
+      canvas.removeEventListener("touchstart", handleTouchDown);
+      canvas.removeEventListener("touchmove", handleTouchMove);
+      canvas.removeEventListener("touchend", handleTouchUp);
+
+      socket.off("beginPath", handleBeginPath);
+      socket.off("drawLine", handleDrawLine);
+    };
+  }, []);
+
+  return (
+    <>
+      <Image
+        className="hidden absolute md:block"
+        src="https://i.ibb.co/bXwBtPh/download-removebg-preview.png"
+        width={120}
+        height={50}
+        alt=""
+        logo
+      />
+      <canvas ref={canvasRef} style={{}}></canvas>
+    </>
+  );
 }
