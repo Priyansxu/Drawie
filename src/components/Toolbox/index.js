@@ -67,7 +67,7 @@ export default function Toolbox() {
                 <input
                   type="range"
                   min={1}
-                  max={200}
+                  max={100}
                   step={1}
                   value={size}
                   onChange={handleBrushSize}
