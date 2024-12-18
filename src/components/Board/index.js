@@ -11,8 +11,8 @@ export default function Board() {
   const drawHistory = useRef([]);
   const historyPointer = useRef(0);
   const shouldDraw = useRef(false);
-  const lastPos = useRef({ x: 0, y: 0 }); // For smooth drawing
-  const lastPositions = useRef([]); // For smoothing
+  const lastPos = useRef({ x: 0, y: 0 });
+  const lastPositions = useRef([]);
   const { activeMenuItem, actionMenuItem } = useSelector((state) => state.menu);
   const { color, size } = useSelector((state) => state.tool[activeMenuItem]);
 
@@ -65,31 +65,50 @@ export default function Board() {
     };
   }, [color, size]);
 
+  // Throttle function to limit the number of draw calls
+  const throttle = (callback, delay) => {
+    let lastCall = 0;
+    return (...args) => {
+      const now = Date.now();
+      if (now - lastCall < delay) return;
+      lastCall = now;
+      callback(...args);
+    };
+  };
+
   useLayoutEffect(() => {
     if (!canvasRef.current) return;
+    
     const canvas = canvasRef.current;
     const context = canvas.getContext("2d");
 
-    canvas.width = window.innerWidth;
-    canvas.height = window.innerHeight;
+    // Set up high-resolution canvas
+    const scale = window.devicePixelRatio; 
+    canvas.width = window.innerWidth * scale; 
+    canvas.height = window.innerHeight * scale; 
+    context.scale(scale, scale); 
 
     const beginPath = (x, y) => {
       context.beginPath();
       context.moveTo(x, y);
-      lastPos.current = { x, y }; // Set last position for smooth drawing
-      lastPositions.current = []; // Reset last positions
+      lastPos.current = { x, y };
+      lastPositions.current = [];
     };
 
-    const drawSmoothLine = (x1, y1, x2, y2) => {
+    // Improved line smoothing using quadratic curves
+    const drawSmoothLine = (points) => {
+      if (points.length < 2) return;
+
       context.beginPath();
-      context.moveTo(x1, y1);
+      context.moveTo(points[0].x, points[0].y);
 
-      const cp1x = x1 + (x2 - x1) * 0.3;
-      const cp1y = y1 + (y2 - y1) * 0.3;
-      const cp2x = x1 + (x2 - x1) * 0.7;
-      const cp2y = y1 + (y2 - y1) * 0.7;
+      for (let i = 1; i < points.length - 1; i++) {
+        const cpX = (points[i].x + points[i + 1].x) / 2;
+        const cpY = (points[i].y + points[i + 1].y) / 2;
+        context.quadraticCurveTo(points[i].x, points[i].y, cpX, cpY);
+      }
 
-      context.bezierCurveTo(cp1x, cp1y, cp2x, cp2y, x2, y2);
+      context.lineTo(points[points.length - 1].x, points[points.length - 1].y);
       context.stroke();
     };
 
@@ -101,39 +120,41 @@ export default function Board() {
         lastPositions.current.shift();
       }
 
-      // Calculate average position
-      const avgX = lastPositions.current.reduce((sum, pos) => sum + pos.x, 0) / lastPositions.current.length;
-      const avgY = lastPositions.current.reduce((sum, pos) => sum + pos.y, 0) / lastPositions.current.length;
-
-      drawSmoothLine(lastPos.current.x, lastPos.current.y, avgX, avgY);
-      lastPos.current = { x: avgX, y: avgY }; // Update last position
+      // Draw smooth line with averaged positions
+      drawSmoothLine(lastPositions.current);
+      
+      lastPos.current = { x: x, y: y }; // Update last position
     };
 
+    // Event handlers for mouse and touch events
     const handleMouseDown = (e) => {
       shouldDraw.current = true;
-      beginPath(e.clientX, e.clientY);
-      socket.emit("beginPath", { x: e.clientX, y: e.clientY });
+      beginPath(e.clientX / scale, e.clientY / scale); // Adjust for scaling
+      socket.emit("beginPath", { x: e.clientX / scale, y: e.clientY / scale });
     };
+
     const handleTouchDown = (e) => {
       shouldDraw.current = true;
-      beginPath(e.touches[0].clientX, e.touches[0].clientY);
+      beginPath(e.touches[0].clientX / scale, e.touches[0].clientY / scale); // Adjust for scaling
       socket.emit("beginPath", {
-        x: e.touches[0].clientX,
-        y: e.touches[0].clientY,
+        x: e.touches[0].clientX / scale,
+        y: e.touches[0].clientY / scale,
       });
     };
-    const handleMouseMove = (e) => {
+
+    // Throttle mouse move event
+    const handleMouseMove = throttle((e) => {
       if (!shouldDraw.current) return;
-      drawLine(e.clientX, e.clientY);
-      socket.emit("drawLine", { x: e.clientX, y: e.clientY });
-    };
+      drawLine(e.clientX / scale, e.clientY / scale); // Adjust for scaling
+      socket.emit("drawLine", { x: e.clientX / scale, y: e.clientY / scale });
+    }, 16);
 
     const handleTouchMove = (e) => {
       if (!shouldDraw.current) return;
-      drawLine(e.touches[0].clientX, e.touches[0].clientY);
+      drawLine(e.touches[0].clientX / scale, e.touches[0].clientY / scale); // Adjust for scaling
       socket.emit("drawLine", {
-        x: e.touches[0].clientX,
-        y: e.touches[0].clientY,
+        x: e.touches[0].clientX / scale,
+        y: e.touches[0].clientY / scale,
       });
     };
 
@@ -143,6 +164,7 @@ export default function Board() {
       drawHistory.current.push(imageData);
       historyPointer.current = drawHistory.current.length - 1;
     };
+
     const handleTouchUp = () => {
       shouldDraw.current = false;
       const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
@@ -150,49 +172,52 @@ export default function Board() {
       historyPointer.current = drawHistory.current.length - 1;
     };
 
-    const handleBeginPath = (path) => {
-      beginPath(path.x, path.y);
-    };
+    // Socket event handlers
+    socket.on("beginPath", ({ x, y }) => beginPath(x / scale, y / scale));
+    
+    socket.on("drawLine", ({ x, y }) => drawLine(x / scale, y / scale));
 
-    const handleDrawLine = (path) => {
-      drawLine(path.x, path.y);
-    };
-
+    
+    // Attach event listeners to the canvas
     canvas.addEventListener("mousedown", handleMouseDown);
+    
     canvas.addEventListener("mousemove", handleMouseMove);
+    
     canvas.addEventListener("mouseup", handleMouseUp);
+    
     canvas.addEventListener("touchstart", handleTouchDown);
+    
     canvas.addEventListener("touchmove", handleTouchMove);
+    
     canvas.addEventListener("touchend", handleTouchUp);
 
-    socket.on("beginPath", handleBeginPath);
-    socket.on("drawLine", handleDrawLine);
+    
+   return () => {
+     // Cleanup event listeners on component unmount
+     canvas.removeEventListener("mousedown", handleMouseDown);
+     canvas.removeEventListener("mousemove", handleMouseMove);
+     canvas.removeEventListener("mouseup", handleMouseUp);
 
-    return () => {
-      canvas.removeEventListener("mousedown", handleMouseDown);
-      canvas.removeEventListener("mousemove", handleMouseMove);
-      canvas.removeEventListener("mouseup", handleMouseUp);
+     canvas.removeEventListener("touchstart", handleTouchDown);
+     canvas.removeEventListener("touchmove", handleTouchMove);
+     canvas.removeEventListener("touchend", handleTouchUp);
 
-      canvas.removeEventListener("touchstart", handleTouchDown);
-      canvas.removeEventListener("touchmove", handleTouchMove);
-      canvas.removeEventListener("touchend", handleTouchUp);
+     socket.off("beginPath");
+     socket.off("drawLine");
+   };
+ }, []);
 
-      socket.off("beginPath", handleBeginPath);
-      socket.off("drawLine", handleDrawLine);
-    };
-  }, []);
-
-  return (
-    <>
-      <Image
-        className="hidden absolute md:block"
-        src="https://i.ibb.co/bXwBtPh/download-removebg-preview.png"
-        width={120}
-        height={50}
-        alt=""
-        logo
-      />
-      <canvas ref={canvasRef} style={{}}></canvas>
-    </>
-  );
+ return (
+   <>
+     <Image
+       className="hidden absolute md:block"
+       src="https://i.ibb.co/bXwBtPh/download-removebg-preview.png"
+       width={120}
+       height={50}
+       alt=""
+       logo
+     />
+     <canvas ref={canvasRef} style={{}}></canvas>
+   </>
+ );
 }
