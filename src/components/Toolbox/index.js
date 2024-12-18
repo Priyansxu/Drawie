@@ -3,11 +3,15 @@ import { useSelector, useDispatch } from "react-redux";
 import { COLORS, MENU_ITEMS } from "@/constants";
 import { changeBrushSize, changeColor } from "@/slices/toolBoxSlice";
 import { socket } from "@/socket";
-import { Minimize2, Maximize2 } from 'lucide-react';
+import { Move, Minimize2, Maximize2 } from 'lucide-react";
 
-const Toolbox = () => {
+export default function Toolbox() {
   const dispatch = useDispatch();
+  const [isDragging, setIsDragging] = useState(false);
+  const [position, setPosition] = useState({ x: 0, y: 0 });
   const [isMinimized, setIsMinimized] = useState(false);
+  const toolboxRef = useRef(null);
+  const moveHandleRef = useRef(null);
 
   const activeMenuItem = useSelector((store) => store.menu.activeMenuItem);
   const { color, size } = useSelector((store) => store.tool[activeMenuItem]);
@@ -15,6 +19,70 @@ const Toolbox = () => {
   const showStrokeToolOption = activeMenuItem === MENU_ITEMS.PENCIL;
   const showBrushToolOption =
     activeMenuItem === MENU_ITEMS.PENCIL || activeMenuItem === MENU_ITEMS.ERASER;
+
+  useEffect(() => {
+    const updatePosition = () => {
+      if (toolboxRef.current) {
+        const windowWidth = window.innerWidth;
+        const windowHeight = window.innerHeight;
+        const toolboxWidth = toolboxRef.current.offsetWidth;
+        const toolboxHeight = toolboxRef.current.offsetHeight;
+
+        const initialX = Math.max(0, Math.min(
+          (windowWidth - toolboxWidth) / 2, 
+          windowWidth - toolboxWidth
+        ));
+
+        const initialY = Math.max(0, Math.min(
+          windowHeight - toolboxHeight - 50,
+          windowHeight - toolboxHeight
+        ));
+
+        setPosition({ x: initialX, y: initialY });
+      }
+    };
+
+    updatePosition();
+    window.addEventListener('resize', updatePosition);
+    return () => window.removeEventListener('resize', updatePosition);
+  }, []);
+
+  useEffect(() => {
+    const handleMouseMove = (e) => {
+      if (isDragging && toolboxRef.current) {
+        const windowWidth = window.innerWidth;
+        const windowHeight = window.innerHeight;
+        const toolboxWidth = toolboxRef.current.offsetWidth;
+        const toolboxHeight = toolboxRef.current.offsetHeight;
+
+        const newX = Math.max(0, Math.min(
+          e.clientX - toolboxWidth / 2,
+          windowWidth - toolboxWidth
+        ));
+
+        const newY = Math.max(0, Math.min(
+          e.clientY - 20,
+          windowHeight - toolboxHeight
+        ));
+
+        setPosition({ x: newX, y: newY });
+      }
+    };
+
+    const handleMouseUp = () => {
+      setIsDragging(false);
+    };
+
+    if (isDragging) {
+      document.addEventListener('mousemove', handleMouseMove);
+      document.addEventListener('mouseup', handleMouseUp);
+    }
+
+    return () => {
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseUp);
+    };
+  }, [isDragging]);
 
   const handleBrushSize = (e) => {
     dispatch(changeBrushSize({ item: activeMenuItem, size: e.target.value }));
@@ -28,22 +96,38 @@ const Toolbox = () => {
 
   return (
     <div 
-      className={`absolute bottom-5 left-1/2 transform -translate-x-1/2 
-        px-5 py-4 w-full max-w-md bg-background1 border border-border1 
-        rounded-xl shadow-shadow1`}
+      ref={toolboxRef}
+      className={`fixed z-50 transition-all duration-300 ease-in-out 
+        shadow-lg rounded-xl bg-white/90 backdrop-blur-sm border border-gray-200 
+        ${isMinimized ? 'h-12 overflow-hidden' : 'h-auto'}`}
+      style={{ 
+        transform: `translate(${position.x}px, ${position.y}px)`,
+        width: '280px',
+        maxWidth: 'calc(100vw - 40px)', 
+      }}
     >
-      <div className="flex items-center justify-between mb-4">
-        <h4 className="text-sm font-bold text-text1">Toolbox</h4>
-        <button 
-          onClick={() => setIsMinimized(!isMinimized)} 
-          className="p-1 rounded-md hover:bg-gray-200"
-        >
-          {isMinimized ? <Maximize2 size={16} /> : <Minimize2 size={16} />}
-        </button>
+      <div 
+        ref={moveHandleRef}
+        onMouseDown={(e) => {
+          setIsDragging(true);
+          e.preventDefault();
+        }}
+        className="flex items-center justify-between p-2 cursor-move bg-gray-100 rounded-t-xl select-none"
+      >
+        <Move className="text-gray-500 cursor-move" size={20} />
+        <div className="flex items-center space-x-2">
+          <button 
+            onClick={() => setIsMinimized(!isMinimized)}
+            className="hover:bg-gray-200 rounded-full p-1"
+            aria-label={isMinimized ? "Expand toolbar" : "Minimize toolbar"}
+          >
+            {isMinimized ? <Maximize2 size={16} /> : <Minimize2 size={16} />}
+          </button>
+        </div>
       </div>
 
       {!isMinimized && (
-        <div>
+        <div className="p-4 max-w-full overflow-x-auto">
           {showStrokeToolOption && (
             <div className="mb-4">
               <h6 className="text-xs text-gray-600 mb-2">Stroke Color</h6>
@@ -81,6 +165,4 @@ const Toolbox = () => {
       )}
     </div>
   );
-};
-
-export default Toolbox;
+}
