@@ -11,6 +11,7 @@ export default function Board() {
   const drawHistory = useRef([]);
   const historyPointer = useRef(0);
   const shouldDraw = useRef(false);
+  const points = useRef<{ x: number, y: number, time: number }[]>([]);
   const { activeMenuItem, actionMenuItem } = useSelector((state) => state.menu);
   const { color, size } = useSelector((state) => state.tool[activeMenuItem]);
 
@@ -62,32 +63,93 @@ export default function Board() {
     const canvas = canvasRef.current;
     const context = canvas.getContext("2d");
 
-    canvas.width = window.innerWidth;
-    canvas.height = window.innerHeight;
+    // Enhanced canvas quality
+    const dpr = window.devicePixelRatio || 1;
+    canvas.style.width = `${window.innerWidth}px`;
+    canvas.style.height = `${window.innerHeight}px`;
+    canvas.width = window.innerWidth * dpr;
+    canvas.height = window.innerHeight * dpr;
+    context.scale(dpr, dpr);
 
-    let lastX = 0, lastY = 0;
+    const addPoint = (x: number, y: number) => {
+      const point = { x, y, time: Date.now() };
+      points.current.push(point);
 
-    const startDrawing = (x, y) => {
-      shouldDraw.current = true;
-      [lastX, lastY] = [x, y];
-      context.beginPath();
-      context.moveTo(x, y);
+      // Keep only last 4 points to prevent memory buildup
+      if (points.current.length > 4) {
+        points.current.shift();
+      }
     };
 
-    const draw = (x, y) => {
-      if (!shouldDraw.current) return;
-      
-      context.beginPath();
-      context.moveTo(lastX, lastY);
-      
-      // Smooth curve interpolation
-      const cpx = (lastX + x) / 2;
-      const cpy = (lastY + y) / 2;
-      
-      context.quadraticCurveTo(cpx, cpy, x, y);
-      context.stroke();
+    const getControlPoints = (points: { x: number, y: number }[]) => {
+      if (points.length < 3) return points;
 
-      [lastX, lastY] = [x, y];
+      const controlPoints = [];
+      for (let i = 1; i < points.length - 1; i++) {
+        const prev = points[i - 1];
+        const curr = points[i];
+        const next = points[i + 1];
+
+        const controlPoint1 = {
+          x: curr.x + (prev.x - next.x) * 0.2,
+          y: curr.y + (prev.y - next.y) * 0.2
+        };
+
+        const controlPoint2 = {
+          x: curr.x + (next.x - prev.x) * 0.2,
+          y: curr.y + (next.y - prev.y) * 0.2
+        };
+
+        controlPoints.push(controlPoint1, controlPoint2);
+      }
+
+      return controlPoints;
+    };
+
+    const draw = () => {
+      if (points.current.length < 2) return;
+
+      context.beginPath();
+      context.moveTo(points.current[0].x, points.current[0].y);
+
+      const controlPoints = getControlPoints(points.current);
+
+      for (let i = 1; i < points.current.length; i++) {
+        const point = points.current[i];
+        const prevPoint = points.current[i - 1];
+
+        // Calculate pressure-based width
+        const timeDiff = point.time - prevPoint.time;
+        const pressure = Math.max(0.1, Math.min(1, 100 / timeDiff));
+        context.lineWidth = size * pressure;
+
+        // Advanced curve drawing
+        if (controlPoints.length >= 2 * i - 1) {
+          context.bezierCurveTo(
+            controlPoints[2 * i - 2].x, 
+            controlPoints[2 * i - 2].y,
+            controlPoints[2 * i - 1].x, 
+            controlPoints[2 * i - 1].y,
+            point.x, 
+            point.y
+          );
+        } else {
+          context.lineTo(point.x, point.y);
+        }
+      }
+
+      context.stroke();
+    };
+
+    const startDrawing = (x: number, y: number) => {
+      shouldDraw.current = true;
+      points.current = [{ x, y, time: Date.now() }];
+    };
+
+    const continueDrawing = (x: number, y: number) => {
+      if (!shouldDraw.current) return;
+      addPoint(x, y);
+      draw();
     };
 
     const stopDrawing = () => {
@@ -96,30 +158,31 @@ export default function Board() {
         const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
         drawHistory.current.push(imageData);
         historyPointer.current = drawHistory.current.length - 1;
+        points.current = [];
       }
     };
 
     // Mouse events
-    const handleMouseDown = (e) => {
+    const handleMouseDown = (e: MouseEvent) => {
       startDrawing(e.clientX, e.clientY);
     };
 
-    const handleMouseMove = (e) => {
-      draw(e.clientX, e.clientY);
+    const handleMouseMove = (e: MouseEvent) => {
+      continueDrawing(e.clientX, e.clientY);
     };
 
     const handleMouseUp = stopDrawing;
     const handleMouseOut = stopDrawing;
 
     // Touch events
-    const handleTouchStart = (e) => {
+    const handleTouchStart = (e: TouchEvent) => {
       const touch = e.touches[0];
       startDrawing(touch.clientX, touch.clientY);
     };
 
-    const handleTouchMove = (e) => {
+    const handleTouchMove = (e: TouchEvent) => {
       const touch = e.touches[0];
-      draw(touch.clientX, touch.clientY);
+      continueDrawing(touch.clientX, touch.clientY);
     };
 
     const handleTouchEnd = stopDrawing;
@@ -145,7 +208,7 @@ export default function Board() {
       canvas.removeEventListener('touchmove', handleTouchMove);
       canvas.removeEventListener('touchend', handleTouchEnd);
     };
-  }, []);
+  }, [color, size]);
 
   return (
     <>
