@@ -33,7 +33,7 @@ export default function Toolbox() {
         rounded-xl shadow-shadow1`}
     >
       <div className="flex items-center justify-between mb-4">
-        <h4 className="text-sm font-bold text-text1">Toolbox</h4>
+        <h4 className="md:ml-4 text-sm font-bold text-text1">Toolbox</h4>
         <button 
           onClick={() => setIsMinimized(!isMinimized)} 
           className="px-5 md:w-1/3 rounded-md hover:bg-gray-200"
