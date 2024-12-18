@@ -11,7 +11,8 @@ export default function Board() {
   const drawHistory = useRef([]);
   const historyPointer = useRef(0);
   const shouldDraw = useRef(false);
-  const lastPos = useRef({ x: 0, y: 0 });
+  const lastPos = useRef({ x: 0, y: 0 }); // For smooth drawing
+  const lastPositions = useRef([]); // For smoothing
   const { activeMenuItem, actionMenuItem } = useSelector((state) => state.menu);
   const { color, size } = useSelector((state) => state.tool[activeMenuItem]);
 
@@ -76,28 +77,36 @@ export default function Board() {
       context.beginPath();
       context.moveTo(x, y);
       lastPos.current = { x, y }; // Set last position for smooth drawing
+      lastPositions.current = []; // Reset last positions
     };
 
     const drawSmoothLine = (x1, y1, x2, y2) => {
       context.beginPath();
       context.moveTo(x1, y1);
 
-      // Interpolation to draw smooth lines
-      const steps = Math.max(Math.abs(x2 - x1), Math.abs(y2 - y1));
-      const dx = (x2 - x1) / steps;
-      const dy = (y2 - y1) / steps;
+      const cp1x = x1 + (x2 - x1) * 0.3;
+      const cp1y = y1 + (y2 - y1) * 0.3;
+      const cp2x = x1 + (x2 - x1) * 0.7;
+      const cp2y = y1 + (y2 - y1) * 0.7;
 
-      for (let i = 0; i <= steps; i++) {
-        const x = x1 + dx * i;
-        const y = y1 + dy * i;
-        context.lineTo(x, y);
-      }
+      context.bezierCurveTo(cp1x, cp1y, cp2x, cp2y, x2, y2);
       context.stroke();
     };
 
     const drawLine = (x, y) => {
-      drawSmoothLine(lastPos.current.x, lastPos.current.y, x, y);
-      lastPos.current = { x, y }; // Update last position
+      lastPositions.current.push({ x, y });
+
+      // Limit the number of stored positions
+      if (lastPositions.current.length > 5) {
+        lastPositions.current.shift();
+      }
+
+      // Calculate average position
+      const avgX = lastPositions.current.reduce((sum, pos) => sum + pos.x, 0) / lastPositions.current.length;
+      const avgY = lastPositions.current.reduce((sum, pos) => sum + pos.y, 0) / lastPositions.current.length;
+
+      drawSmoothLine(lastPos.current.x, lastPos.current.y, avgX, avgY);
+      lastPos.current = { x: avgX, y: avgY }; // Update last position
     };
 
     const handleMouseDown = (e) => {
