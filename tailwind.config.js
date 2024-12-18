@@ -21,7 +21,10 @@ module.exports = {
       border2: '#d6d6d6',
       text1: '#3d3d3d',
       text2: '#e3e2fe'
-    }
+    },
+    borderWidth: {
+        '0.5': '0.5px'  
+   }
   },
   plugins: [],
 }
