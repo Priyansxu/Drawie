@@ -16,7 +16,7 @@ export default function Menu() {
   };
 
   return (
-    <div className="absolute px-5 py-1 flex justify-between md:w-1/4 left-1/2 top-6 rounded-xl md:rounded-md border border-0.5 border-border1 bg-background1 shadow-shadow1 transform -translate-x-1/2">
+    <div className="absolute px-5 py-1 flex justify-between md:max-w-full left-1/2 top-6 rounded-xl md:rounded-md border border-0.5 border-border1 bg-background1 shadow-shadow1 transform -translate-x-1/2">
       <div
         className={`cursor-pointer flex justify-center items-center h-10 w-10 rounded-md ${
           activeMenuItem === MENU_ITEMS.PENCIL ? "bg-text2" : ""
