@@ -29,7 +29,7 @@ export default function Toolbox() {
   return (
     <div 
       className={`absolute bottom-5 left-1/2 transform -translate-x-1/2 
-        px-5 py-4 w-1/4 bottom-8 bg-background1 border border-border1 
+        px-5 py-4 md:w-1/4 bottom-8 bg-background1 border border-border1 
         rounded-xl shadow-shadow1`}
     >
       <div className="flex items-center justify-between mb-4">
