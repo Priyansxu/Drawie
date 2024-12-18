@@ -32,7 +32,7 @@ export default function Toolbox() {
         px-5 py-4 md:max-w-full bg-background1 border border-border1 
         rounded-xl shadow-shadow1`}
     >
-      <div className="flex items-center justify-between mb-4">
+      <div className="flex items-center justify-between mb-4 space-x-6">
         <h4 className="md:ml-4 text-sm font-bold text-text1">Toolbox</h4>
         <button 
           onClick={() => setIsMinimized(!isMinimized)} 
@@ -47,7 +47,7 @@ export default function Toolbox() {
           {showStrokeToolOption && (
             <div className="mb-4">
               <h6 className="text-xs text-gray-600 mb-2">Stroke Color</h6>
-              <div className="flex justify-between space-x-1">
+              <div className="flex justify-between space-x-3">
                 {Object.values(COLORS).map((clr) => (
                   <div
                     key={clr}
