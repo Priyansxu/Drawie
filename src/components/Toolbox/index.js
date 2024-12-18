@@ -36,7 +36,7 @@ export default function Toolbox() {
         <h4 className="md:ml-4 text-sm font-bold text-text1">Toolbox</h4>
         <button 
           onClick={() => setIsMinimized(!isMinimized)} 
-          className="px-5 md:w-1/3 rounded-md hover:bg-gray-200"
+          className="flex items-center justify-center p-2 rounded-md hover:bg-gray-200"
         >
           {isMinimized ? <Maximize2 className="right-4" size={16} /> : <Minimize2 className="right-4" size={16} />}
         </button>
