@@ -1,11 +1,13 @@
-import React from "react";
+import React, { useState, useRef, useEffect } from 'react';
 import { useSelector, useDispatch } from "react-redux";
-import { COLORS } from "@/constants";
+import { COLORS, MENU_ITEMS } from "@/constants";
 import { changeBrushSize, changeColor } from "@/slices/toolBoxSlice";
 import { socket } from "@/socket";
+import { Minimize2, Maximize2 } from 'lucide-react';
 
-export default function Toolbox() {
+const Toolbox = () => {
   const dispatch = useDispatch();
+  const [isMinimized, setIsMinimized] = useState(false);
 
   const activeMenuItem = useSelector((store) => store.menu.activeMenuItem);
   const { color, size } = useSelector((store) => store.tool[activeMenuItem]);
@@ -25,41 +27,60 @@ export default function Toolbox() {
   };
 
   return (
-    <div className="absolute bottom-5 left-1/2 transform -translate-x-1/2 px-5 py-4 w-full max-w-md bg-background1 border border-border1 rounded-xl shadow-shadow1">
-      {showStrokeToolOption && (
-        <div className="mb-4">
-          <h6 className="text-xs text-gray-600 mb-2">Stroke Color</h6>
-          <div className="flex justify-between space-x-1">
-            {Object.values(COLORS).map((clr) => (
-              <div
-                key={clr}
-                className={`h-6 w-6 rounded-full cursor-pointer transition-all ${
-                  color === clr ? "ring-2 ring-blue-500 scale-110" : "hover:scale-110"
-                }`}
-                style={{ backgroundColor: clr }}
-                onClick={() => handleColor(clr)}
-              />
-            ))}
-          </div>
-        </div>
-      )}
+    <div 
+      className={`absolute bottom-5 left-1/2 transform -translate-x-1/2 
+        px-5 py-4 w-full max-w-md bg-background1 border border-border1 
+        rounded-xl shadow-shadow1`}
+    >
+      <div className="flex items-center justify-between mb-4">
+        <h4 className="text-sm font-bold text-text1">Toolbox</h4>
+        <button 
+          onClick={() => setIsMinimized(!isMinimized)} 
+          className="p-1 rounded-md hover:bg-gray-200"
+        >
+          {isMinimized ? <Maximize2 size={16} /> : <Minimize2 size={16} />}
+        </button>
+      </div>
 
-      {showBrushToolOption && (
+      {!isMinimized && (
         <div>
-          <h6 className="text-xs text-gray-600 mb-2">Brush Size: {size}</h6>
-          <div className="relative">
-            <input
-              type="range"
-              min={1}
-              max={500}
-              step={1}
-              value={size}
-              onChange={handleBrushSize}
-              className="w-full h-2 bg-gray-200 rounded-full appearance-none cursor-pointer"
-            />
-          </div>
+          {showStrokeToolOption && (
+            <div className="mb-4">
+              <h6 className="text-xs text-gray-600 mb-2">Stroke Color</h6>
+              <div className="flex justify-between space-x-1">
+                {Object.values(COLORS).map((clr) => (
+                  <div
+                    key={clr}
+                    className={`h-6 w-6 rounded-full cursor-pointer transition-all 
+                      ${color === clr ? 'ring-2 ring-blue-500 scale-110' : 'hover:scale-110'}`}
+                    style={{ backgroundColor: clr }}
+                    onClick={() => handleColor(clr)}
+                  />
+                ))}
+              </div>
+            </div>
+          )}
+
+          {showBrushToolOption && (
+            <div>
+              <h6 className="text-xs text-gray-600 mb-2">Brush Size: {size}</h6>
+              <div className="relative">
+                <input
+                  type="range"
+                  min={1}
+                  max={500}
+                  step={1}
+                  value={size}
+                  onChange={handleBrushSize}
+                  className="w-full h-2 bg-gray-200 rounded-full appearance-none cursor-pointer"
+                />
+              </div>
+            </div>
+          )}
         </div>
       )}
     </div>
   );
-}
+};
+
+export default Toolbox;
