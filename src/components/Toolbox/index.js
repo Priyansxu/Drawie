@@ -79,15 +79,12 @@ export default function Toolbox() {
         </div>
       )}
 
-      {/* SVG Background */}
-      <div 
-        className="absolute bottom-0 left-0 w-full" 
-        style={{ transform: 'scaleY(-1)', transformOrigin: 'bottom' }}
-      >
+      {/* Separate div for SVG background */}
+      <div className="absolute bottom-0 left-0 w-full">
         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 100" width="100%">
           <path 
             d="M -28.16 50 Q 35.84 50 99.84 0 Q 163.84 50 227.84 50 Q 291.84 50 355.84 0 Q 419.84 50 483.84 50 Q 547.84 50 611.84 0 Q 675.84 50 739.84 50 Q 803.84 50 867.84 0 Q 931.84 50 995.84 50 Q 1059.84 50 1123.84 0 Q 1187.84 50 1251.84 50 Q 1315.84 50 1379.84 0 Q 1443.84 50 1507.84 50 L 1280 100 L 0 100 Z" 
-            fill="#B57EDC"
+            fill="#B57EDC"  // Light purple color
           />
         </svg>
       </div>
