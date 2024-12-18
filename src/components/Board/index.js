@@ -1,4 +1,4 @@
-import { useEffect, useRef, useLayoutEffect } from "react";
+import { useEffect, useRef, useLayoutEffect, useState } from "react";
 import { useSelector, useDispatch } from "react-redux";
 import { MENU_ITEMS } from "@/constants";
 import { actionItemClick } from "../../slices/menuSlice";
@@ -11,34 +11,72 @@ export default function Board() {
   const drawHistory = useRef([]);
   const historyPointer = useRef(0);
   const shouldDraw = useRef(false);
+  const lastPos = useRef({ x: 0, y: 0 });
+  const [isDrawing, setIsDrawing] = useState(false);
+
   const { activeMenuItem, actionMenuItem } = useSelector((state) => state.menu);
   const { color, size } = useSelector((state) => state.tool[activeMenuItem]);
+
+  // Improved drawing with smoother lines using Bezier curves
+  const drawSmoothLine = (context, x1, y1, x2, y2) => {
+    context.beginPath();
+    context.moveTo(x1, y1);
+    
+    // Calculate control points for a smooth curve
+    const cp1x = x1 + (x2 - x1) * 0.3;
+    const cp1y = y1 + (y2 - y1) * 0.3;
+    const cp2x = x1 + (x2 - x1) * 0.7;
+    const cp2y = y1 + (y2 - y1) * 0.7;
+    
+    context.bezierCurveTo(cp1x, cp1y, cp2x, cp2y, x2, y2);
+    context.stroke();
+  };
+
+  // Optimize canvas setup for high-resolution displays
+  const setupHighResCanvas = (canvas) => {
+    const dpr = window.devicePixelRatio || 1;
+    const rect = canvas.getBoundingClientRect();
+    
+    canvas.width = rect.width * dpr;
+    canvas.height = rect.height * dpr;
+    
+    const ctx = canvas.getContext('2d');
+    ctx.scale(dpr, dpr);
+    
+    // Improve line rendering
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+    
+    return ctx;
+  };
 
   useEffect(() => {
     if (!canvasRef.current) return;
     const canvas = canvasRef.current;
-    const context = canvas.getContext("2d");
+    const context = setupHighResCanvas(canvas);
 
+    // Download functionality
     if (actionMenuItem === MENU_ITEMS.DOWNLOAD) {
-      const URL = canvas.toDataURL();
+      const URL = canvas.toDataURL('image/png');
       const anchor = document.createElement("a");
       anchor.href = URL;
-      anchor.download = "आकृति.jpg";
+      anchor.download = "drawing.png";
       anchor.click();
-    } else if (
+    } 
+    // Undo/Redo functionality with improved state management
+    else if (
       actionMenuItem === MENU_ITEMS.UNDO ||
       actionMenuItem === MENU_ITEMS.REDO
     ) {
-      if (historyPointer.current > 0 && actionMenuItem === MENU_ITEMS.UNDO)
-        historyPointer.current -= 1;
-      if (
-        historyPointer.current < drawHistory.current.length - 1 &&
-        actionMenuItem === MENU_ITEMS.REDO
-      )
-        historyPointer.current += 1;
-      const imageData = drawHistory.current[historyPointer.current];
+      const newPointer = actionMenuItem === MENU_ITEMS.UNDO 
+        ? Math.max(0, historyPointer.current - 1)
+        : Math.min(drawHistory.current.length - 1, historyPointer.current + 1);
+      
+      historyPointer.current = newPointer;
+      const imageData = drawHistory.current[newPointer];
       context.putImageData(imageData, 0, 0);
     }
+    
     dispatch(actionItemClick(null));
   }, [actionMenuItem, dispatch]);
 
@@ -50,13 +88,17 @@ export default function Board() {
     const changeConfig = (color, size) => {
       context.strokeStyle = color;
       context.lineWidth = size;
+      context.lineCap = 'round';
+      context.lineJoin = 'round';
     };
 
+    changeConfig(color, size);
+    
+    // Socket configuration handling
     const handleChangeConfig = (config) => {
-      console.log("config", config);
       changeConfig(config.color, config.size);
     };
-    changeConfig(color, size);
+    
     socket.on("changeConfig", handleChangeConfig);
 
     return () => {
@@ -69,88 +111,101 @@ export default function Board() {
     const canvas = canvasRef.current;
     const context = canvas.getContext("2d");
 
-    canvas.width = window.innerWidth;
-    canvas.height = window.innerHeight;
+    // Responsive canvas sizing
+    const resizeCanvas = () => {
+      const dpr = window.devicePixelRatio || 1;
+      const rect = canvas.getBoundingClientRect();
+      
+      canvas.width = rect.width * dpr;
+      canvas.height = rect.height * dpr;
+      
+      context.scale(dpr, dpr);
+      context.lineCap = 'round';
+      context.lineJoin = 'round';
+    };
 
-    const beginPath = (x, y) => {
+    resizeCanvas();
+    window.addEventListener('resize', resizeCanvas);
+
+    const handleDrawStart = (e) => {
+      const pos = e.touches ? e.touches[0] : e;
+      shouldDraw.current = true;
+      lastPos.current = { x: pos.clientX, y: pos.clientY };
+      setIsDrawing(true);
+      
       context.beginPath();
-      context.moveTo(x, y);
+      context.moveTo(pos.clientX, pos.clientY);
+      
+      socket.emit("beginPath", { x: pos.clientX, y: pos.clientY });
     };
 
-    const drawLine = (x, y) => {
-      context.lineTo(x, y);
+    const handleDrawMove = (e) => {
+      if (!shouldDraw.current) return;
+      
+      const pos = e.touches ? e.touches[0] : e;
+      drawSmoothLine(
+        context, 
+        lastPos.current.x, 
+        lastPos.current.y, 
+        pos.clientX, 
+        pos.clientY
+      );
+      
+      lastPos.current = { x: pos.clientX, y: pos.clientY };
+      
+      socket.emit("drawLine", { 
+        x: pos.clientX, 
+        y: pos.clientY 
+      });
+    };
+
+    const handleDrawEnd = () => {
+      if (!shouldDraw.current) return;
+      
+      shouldDraw.current = false;
+      setIsDrawing(false);
+      
+      const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
+      drawHistory.current.push(imageData);
+      historyPointer.current = drawHistory.current.length - 1;
+    };
+
+    // Event listeners for mouse and touch
+    canvas.addEventListener("mousedown", handleDrawStart);
+    canvas.addEventListener("mousemove", handleDrawMove);
+    canvas.addEventListener("mouseup", handleDrawEnd);
+    canvas.addEventListener("mouseout", handleDrawEnd);
+    
+    canvas.addEventListener("touchstart", handleDrawStart);
+    canvas.addEventListener("touchmove", handleDrawMove);
+    canvas.addEventListener("touchend", handleDrawEnd);
+
+    // Socket event listeners
+    socket.on("beginPath", (path) => {
+      context.beginPath();
+      context.moveTo(path.x, path.y);
+    });
+
+    socket.on("drawLine", (path) => {
+      context.lineTo(path.x, path.y);
       context.stroke();
-    };
-    const handleMouseDown = (e) => {
-      shouldDraw.current = true;
-      beginPath(e.clientX, e.clientY);
-      socket.emit("beginPath", { x: e.clientX, y: e.clientY });
-    };
-    const handleTouchDown = (e) => {
-      shouldDraw.current = true;
-      beginPath(e.touches[0].clientX, e.touches[0].clientY);
-      socket.emit("beginPath", {
-        x: e.touches[0].clientX,
-        y: e.touches[0].clientY,
-      });
-    };
-    const handleMouseMove = (e) => {
-      if (!shouldDraw.current) return;
-      drawLine(e.clientX, e.clientY);
-      socket.emit("drawLine", { x: e.clientX, y: e.clientY });
-    };
-
-    const handleTouchMove = (e) => {
-      if (!shouldDraw.current) return;
-      drawLine(e.touches[0].clientX, e.touches[0].clientY);
-      socket.emit("drawLine", {
-        x: e.touches[0].clientX,
-        y: e.touches[0].clientY,
-      });
-    };
-
-    const handleMouseUp = (e) => {
-      shouldDraw.current = false;
-      const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
-      drawHistory.current.push(imageData);
-      historyPointer.current = drawHistory.current.length - 1;
-    };
-    const handleTouchUp = (e) => {
-      shouldDraw.current = false;
-      const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
-      drawHistory.current.push(imageData);
-      historyPointer.current = drawHistory.current.length - 1;
-    };
-
-    const handleBeginPath = (path) => {
-      beginPath(path.x, path.y);
-    };
-
-    const handleDrawLine = (path) => {
-      drawLine(path.x, path.y);
-    };
-
-    canvas.addEventListener("mousedown", handleMouseDown);
-    canvas.addEventListener("mousemove", handleMouseMove);
-    canvas.addEventListener("mouseup", handleMouseUp);
-    canvas.addEventListener("touchstart", handleTouchDown);
-    canvas.addEventListener("touchmove", handleTouchMove);
-    canvas.addEventListener("touchend", handleTouchUp);
-
-    socket.on("beginPath", handleBeginPath);
-    socket.on("drawLine", handleDrawLine);
+    });
 
     return () => {
-      canvas.removeEventListener("mousedown", handleMouseDown);
-      canvas.removeEventListener("mousemove", handleMouseMove);
-      canvas.removeEventListener("mouseup", handleMouseUp);
+      // Cleanup event listeners
+      canvas.removeEventListener("mousedown", handleDrawStart);
+      canvas.removeEventListener("mousemove", handleDrawMove);
+      canvas.removeEventListener("mouseup", handleDrawEnd);
+      canvas.removeEventListener("mouseout", handleDrawEnd);
+      
+      canvas.removeEventListener("touchstart", handleDrawStart);
+      canvas.removeEventListener("touchmove", handleDrawMove);
+      canvas.removeEventListener("touchend", handleDrawEnd);
+      
+      window.removeEventListener('resize', resizeCanvas);
 
-      canvas.removeEventListener("touchstart", handleTouchDown);
-      canvas.removeEventListener("touchmove", handleTouchMove);
-      canvas.removeEventListener("touchend", handleTouchUp);
-
-      socket.off("beginPath", handleBeginPath);
-      socket.off("drawLine", handleDrawLine);
+      socket.off("beginPath");
+      socket.off("drawLine");
     };
   }, []);
 
@@ -161,10 +216,20 @@ export default function Board() {
         src='https://i.ibb.co/bXwBtPh/download-removebg-preview.png'
         width={120}
         height={50}
-        alt=''
-        logo
+        alt='Logo'
+        priority
       />
-      <canvas ref={canvasRef} style={{}}></canvas>
+      <canvas 
+        ref={canvasRef} 
+        style={{
+          position: 'absolute', 
+          top: 0, 
+          left: 0, 
+          width: '100%', 
+          height: '100%',
+          cursor: isDrawing ? 'grabbing' : 'grab'
+        }}
+      />
     </>
   );
 }
