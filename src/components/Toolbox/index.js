@@ -72,7 +72,7 @@ export default function Toolbox() {
                   step={1}
                   value={size}
                   onChange={handleBrushSize}
-                  className="w-full h-2 bg-gray-200 rounded-full appearance-none cursor-pointer"
+                  className="w-full h-2 bg-gray-200 rounded-full cursor-pointer"
                 />
               </div>
             </div>
