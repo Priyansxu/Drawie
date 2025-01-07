@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { useSelector, useDispatch } from "react-redux";
 import { COLORS, MENU_ITEMS } from "@/constants";
 import { changeBrushSize, changeColor } from "@/slices/toolBoxSlice";
@@ -8,6 +8,7 @@ import { Minimize2, Maximize2 } from 'lucide-react';
 export default function Toolbox() {
   const dispatch = useDispatch();
   const [isMinimized, setIsMinimized] = useState(false);
+  const colorScrollRef = useRef(null);
 
   const activeMenuItem = useSelector((store) => store.menu.activeMenuItem);
   const { color, size } = useSelector((store) => store.tool[activeMenuItem]);
@@ -27,14 +28,11 @@ export default function Toolbox() {
   };
 
   return (
-    <div 
-      className={`absolute bottom-2 left-1/2 transform -translate-x-1/2 
-        px-5 py-4 md:max-w-full bg-background1 border border-border1 border-0.5 rounded-xl shadow-shadow1`}
-    >
+    <div className={`absolute bottom-2 left-1/2 transform -translate-x-1/2 px-5 py-4 md:max-w-full bg-background1 border border-border1 border-0.5 rounded-xl shadow-shadow1`}>
       <div className="flex items-center justify-between mb-4 space-x-6">
         <h4 className="md:ml-4 text-sm font-bold text-text1">Toolbox</h4>
-        <button 
-          onClick={() => setIsMinimized(!isMinimized)} 
+        <button
+          onClick={() => setIsMinimized(!isMinimized)}
           className="flex items-center justify-center px-2 rounded-md hover:bg-gray-200"
         >
           {isMinimized ? <Maximize2 className="text-text1" size={16} /> : <Minimize2 className="text-text1" size={16} />}
@@ -46,19 +44,18 @@ export default function Toolbox() {
           {showStrokeToolOption && (
             <div className="mb-4">
               <h6 className="text-xs text-gray-600 mb-2">Stroke Color</h6>
-              <div 
-                className="flex space-x-3 overflow-x-auto scrollbar-hide"
-                style={{ WebkitOverflowScrolling: "touch" }}
-              >
-                {Object.values(COLORS).map((clr) => (
-                  <div
-                    key={clr}
-                    className={`h-6 w-6 rounded-full cursor-pointer transition-all 
-                      ${color === clr ? 'ring-2 ring-blue-500 scale-110' : 'hover:scale-110'}`}
-                    style={{ backgroundColor: clr }}
-                    onClick={() => handleColor(clr)}
-                  />
-                ))}
+              <div className="overflow-x-auto whitespace-nowrap" ref={colorScrollRef}> {/* Added horizontal scroll */}
+                <div className="flex space-x-3"> {/* Added flex container */}
+                  {Object.values(COLORS).map((clr) => (
+                    <div
+                      key={clr}
+                      className={`h-6 w-6 rounded-full cursor-pointer transition-all
+                        ${color === clr ? 'ring-2 ring-blue-500 scale-110' : 'hover:scale-110'}`}
+                      style={{ backgroundColor: clr }}
+                      onClick={() => handleColor(clr)}
+                    />
+                  ))}
+                </div>
               </div>
             </div>
           )}
