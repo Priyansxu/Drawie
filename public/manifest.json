@@ -1,6 +1,6 @@
 {
-  "name": "Aakriti",
-  "short_name": "Aakriti",
+  "name": "Drawie",
+  "short_name": "Drawie",
   "theme_color": "#656668",
   "background_color": "1F1F1F",
   "display": "standalone",
@@ -8,8 +8,6 @@
   "scope": "/",
   "start_url": "/",
   "icons": [
-    { "src": "/icons-192.png", "type": "image/png", "sizes": "192x192" },
-    { "src": "/icons-256.png", "type": "image/png", "sizes": "256x256" },
-    { "src": "/icons-512.png", "type": "image/png", "sizes": "512x512" }
+   { "src": "/logo.jpg", "type": "image/jpg", "sizes": "2248x2248" }
   ]
 }
