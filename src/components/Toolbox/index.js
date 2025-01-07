@@ -1,5 +1,3 @@
-'use client'
-
 import React, { useState, useRef, useEffect } from 'react';
 import { useSelector, useDispatch } from "react-redux";
 import { COLORS, MENU_ITEMS } from "@/constants";
