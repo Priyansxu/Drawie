@@ -34,7 +34,7 @@ export default function Toolbox() {
   return (
     <div
       className={`fixed bottom-2 left-1/2 transform -translate-x-1/2 
-        px-5 py-4 w-11/12 max-w-md bg-background1 border border-0.5 border-border1 rounded-xl shadow-shadow1`}
+        px-5 py-4 md:max-w-full bg-background1 border border-0.5 border-border1 rounded-xl shadow-shadow1`}
     >
       <div className="flex items-center justify-between mb-4">
         <h4 className="text-sm font-bold text-text1">Toolbox</h4>
