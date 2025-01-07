@@ -4,11 +4,11 @@ export default function Document() {
   return (
     <Html lang="en">
       <Head>
-        <meta name="title" content="Aakriti" />
-        <meta name="description" content="Aakriti" />
+        <meta name="title" content="Drawie" />
+        <meta name="description" content="Drawie" />
         <meta name="generator" content="Next.js" />
         <link rel="manifest" href="/manifest.json" />
-        <meta name="keywords" content="nextjs, next14, pwa, next-pwa" />
+        <meta name="keywords" content="draw, drawing, app" />
       </Head>
       <body>
         <Main />
