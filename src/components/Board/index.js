@@ -3,7 +3,6 @@ import { useSelector, useDispatch } from "react-redux";
 import { MENU_ITEMS } from "@/constants";
 import { actionItemClick } from "../../slices/menuSlice";
 import { socket } from "@/socket";
-import Image from "next/image";
 
 export default function Board() {
   const dispatch = useDispatch();
@@ -149,14 +148,6 @@ export default function Board() {
 
   return (
     <>
-      <Image
-        className="hidden absolute md:block"
-        src="https://drawie.js.org/logo.jpg"
-        width={120}
-        height={50}
-        alt=""
-        logo
-      />
       <canvas ref={canvasRef} style={{cursor: 'crosshair'}}></canvas>
     </>
   );
