@@ -1,54 +1,62 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { useSelector, useDispatch } from "react-redux";
-import { COLORS, MENU_ITEMS } from "@/constants";
-import { changeBrushSize, changeColor } from "@/slices/toolBoxSlice";
-import { socket } from "@/socket";
+'use client';
+
+import React, { useState, useRef } from 'react';
+import { useSelector, useDispatch } from 'react-redux';
+import { COLORS, MENU_ITEMS } from '@/constants';
+import { changeBrushSize, changeColor } from '@/slices/toolBoxSlice';
+import { socket } from '@/socket';
 import { Minimize2, Maximize2, ChevronLeft, ChevronRight } from 'lucide-react';
 
 export default function Toolbox() {
   const dispatch = useDispatch();
   const [isMinimized, setIsMinimized] = useState(false);
-  const colorContainerRef = useRef<HTMLDivElement>(null);
+  const colorContainerRef = useRef(null);
 
   const activeMenuItem = useSelector((store) => store.menu.activeMenuItem);
-  const { color, size } = useSelector((store) => store.tool[activeMenuItem]);
+  const toolConfig = useSelector((store) => store.tool[activeMenuItem] || {});
+  const { color = '', size = 1 } = toolConfig;
 
   const showStrokeToolOption = activeMenuItem === MENU_ITEMS.PENCIL;
   const showBrushToolOption =
     activeMenuItem === MENU_ITEMS.PENCIL || activeMenuItem === MENU_ITEMS.ERASER;
 
   const handleBrushSize = (e) => {
-    dispatch(changeBrushSize({ item: activeMenuItem, size: e.target.value }));
-    socket.emit("changeConfig", { color, size: e.target.value });
+    const newSize = e.target.value;
+    dispatch(changeBrushSize({ item: activeMenuItem, size: newSize }));
+    socket.emit('changeConfig', { color, size: newSize });
   };
 
   const handleColor = (newColor) => {
     dispatch(changeColor({ item: activeMenuItem, color: newColor }));
-    socket.emit("changeConfig", { color: newColor, size });
+    socket.emit('changeConfig', { color: newColor, size });
   };
 
   const scrollColors = (direction) => {
     if (colorContainerRef.current) {
-      const scrollAmount = 100; // Adjust this value to control scroll distance
+      const scrollAmount = 100; // Adjust scroll distance as needed
       colorContainerRef.current.scrollBy({
         left: direction === 'left' ? -scrollAmount : scrollAmount,
-        behavior: 'smooth'
+        behavior: 'smooth',
       });
     }
   };
 
   return (
-    <div 
+    <div
       className={`fixed bottom-2 left-1/2 transform -translate-x-1/2 
-        px-5 py-4 w-11/12 max-w-md bg-background1 border border-border1 border-0.5 rounded-xl shadow-shadow1`}
+        px-5 py-4 w-11/12 max-w-md bg-background1 border border-border1 rounded-xl shadow-shadow1`}
     >
       <div className="flex items-center justify-between mb-4">
         <h4 className="text-sm font-bold text-text1">Toolbox</h4>
-        <button 
-          onClick={() => setIsMinimized(!isMinimized)} 
+        <button
+          onClick={() => setIsMinimized(!isMinimized)}
           className="flex items-center justify-center px-2 rounded-md hover:bg-gray-200"
         >
-          {isMinimized ? <Maximize2 className="text-text1" size={16} /> : <Minimize2 className="text-text1" size={16} />}
+          {isMinimized ? (
+            <Maximize2 className="text-text1" size={16} />
+          ) : (
+            <Minimize2 className="text-text1" size={16} />
+          )}
         </button>
       </div>
 
@@ -58,28 +66,31 @@ export default function Toolbox() {
             <div className="mb-4">
               <h6 className="text-xs text-gray-600 mb-2">Stroke Color</h6>
               <div className="relative">
-                <button 
-                  onClick={() => scrollColors('left')} 
+                <button
+                  onClick={() => scrollColors('left')}
                   className="absolute left-0 top-1/2 transform -translate-y-1/2 bg-white rounded-full shadow-md p-1"
                 >
                   <ChevronLeft size={20} />
                 </button>
-                <div 
+                <div
                   ref={colorContainerRef}
-                  className="flex space-x-3 overflow-x-auto scrollbar-hide py-2 px-6"
+                  className="flex space-x-3 overflow-x-auto py-2 px-6"
                 >
                   {Object.values(COLORS).map((clr) => (
                     <div
                       key={clr}
-                      className={`flex-shrink-0 h-8 w-8 rounded-full cursor-pointer transition-all 
-                        ${color === clr ? 'ring-2 ring-blue-500 scale-110' : 'hover:scale-110'}`}
+                      className={`flex-shrink-0 h-8 w-8 rounded-full cursor-pointer transition-all ${
+                        color === clr
+                          ? 'ring-2 ring-blue-500 scale-110'
+                          : 'hover:scale-110'
+                      }`}
                       style={{ backgroundColor: clr }}
                       onClick={() => handleColor(clr)}
                     />
                   ))}
                 </div>
-                <button 
-                  onClick={() => scrollColors('right')} 
+                <button
+                  onClick={() => scrollColors('right')}
                   className="absolute right-0 top-1/2 transform -translate-y-1/2 bg-white rounded-full shadow-md p-1"
                 >
                   <ChevronRight size={20} />
@@ -109,4 +120,3 @@ export default function Toolbox() {
     </div>
   );
 }
-
