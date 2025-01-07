@@ -46,7 +46,10 @@ export default function Toolbox() {
           {showStrokeToolOption && (
             <div className="mb-4">
               <h6 className="text-xs text-gray-600 mb-2">Stroke Color</h6>
-              <div className="flex justify-between space-x-3">
+              <div 
+                className="flex space-x-3 overflow-x-auto scrollbar-hide"
+                style={{ WebkitOverflowScrolling: "touch" }}
+              >
                 {Object.values(COLORS).map((clr) => (
                   <div
                     key={clr}
