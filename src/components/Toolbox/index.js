@@ -6,25 +6,26 @@ import { COLORS, MENU_ITEMS } from "@/constants";
 import { changeBrushSize, changeColor } from "@/slices/toolBoxSlice";
 import { socket } from "@/socket";
 import { Minimize2, Maximize2, ChevronLeft, ChevronRight } from 'lucide-react';
+import { RootState } from "@/store";
 
-export default function Toolbox() {
+export default function Toolbox(): JSX.Element {
   const dispatch = useDispatch();
   const [isMinimized, setIsMinimized] = useState(false);
   const colorContainerRef = useRef<HTMLDivElement>(null);
 
-  const activeMenuItem = useSelector((store) => store.menu.activeMenuItem);
-  const { color, size } = useSelector((store) => store.tool[activeMenuItem]);
+  const activeMenuItem = useSelector((store: RootState) => store.menu.activeMenuItem);
+  const { color, size } = useSelector((store: RootState) => store.tool[activeMenuItem]);
 
   const showStrokeToolOption = activeMenuItem === MENU_ITEMS.PENCIL;
   const showBrushToolOption =
     activeMenuItem === MENU_ITEMS.PENCIL || activeMenuItem === MENU_ITEMS.ERASER;
 
-  const handleBrushSize = (e) => {
-    dispatch(changeBrushSize({ item: activeMenuItem, size: e.target.value }));
-    socket.emit("changeConfig", { color, size: e.target.value });
+  const handleBrushSize = (e: React.ChangeEvent<HTMLInputElement>) => {
+    dispatch(changeBrushSize({ item: activeMenuItem, size: parseInt(e.target.value) }));
+    socket.emit("changeConfig", { color, size: parseInt(e.target.value) });
   };
 
-  const handleColor = (newColor) => {
+  const handleColor = (newColor: string) => {
     dispatch(changeColor({ item: activeMenuItem, color: newColor }));
     socket.emit("changeConfig", { color: newColor, size });
   };
