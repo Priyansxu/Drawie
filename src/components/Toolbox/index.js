@@ -51,18 +51,45 @@ export default function Toolbox() {
             <div className="mb-4">
               <h6 className="text-xs text-gray-600 mb-2">Stroke Color</h6>
               <div
-                className="flex space-x-2 overflow-x-auto md:flex-wrap md:justify-start"
-                style={{ maxHeight: "100px" }}
+                className="flex space-x-2 overflow-x-auto md:flex-wrap md:justify-start md:space-y-2 md:space-x-4"
+                style={{
+                  maxHeight: "80px",
+                  margin: "0 auto",
+                }}
               >
-                {Object.values(COLORS).map((clr) => (
-                  <div
-                    key={clr}
-                    className={`h-6 w-6 rounded-full cursor-pointer transition-all 
-                      ${color === clr ? "ring-2 ring-blue-500 scale-110" : "hover:scale-110"}`}
-                    style={{ backgroundColor: clr }}
-                    onClick={() => handleColor(clr)}
-                  />
-                ))}
+                {/* Show the first 6 colors */}
+                {Object.values(COLORS)
+                  .slice(0, 6)
+                  .map((clr) => (
+                    <div
+                      key={clr}
+                      className={`h-6 w-6 rounded-full cursor-pointer transition-all 
+                        ${color === clr ? "ring-2 ring-blue-500 scale-110" : "hover:scale-110"}`}
+                      style={{ backgroundColor: clr }}
+                      onClick={() => handleColor(clr)}
+                    />
+                  ))}
+              </div>
+
+              {/* Remaining colors in a scrollable row */}
+              <div
+                className="flex space-x-2 overflow-x-auto md:flex-wrap md:justify-start md:space-y-2 md:space-x-4 mt-2"
+                style={{
+                  maxHeight: "80px",
+                  margin: "0 auto",
+                }}
+              >
+                {Object.values(COLORS)
+                  .slice(6)
+                  .map((clr) => (
+                    <div
+                      key={clr}
+                      className={`h-6 w-6 rounded-full cursor-pointer transition-all 
+                        ${color === clr ? "ring-2 ring-blue-500 scale-110" : "hover:scale-110"}`}
+                      style={{ backgroundColor: clr }}
+                      onClick={() => handleColor(clr)}
+                    />
+                  ))}
               </div>
             </div>
           )}
