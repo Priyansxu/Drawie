@@ -5,7 +5,7 @@ import { useSelector, useDispatch } from 'react-redux';
 import { COLORS, MENU_ITEMS } from '@/constants';
 import { changeBrushSize, changeColor } from '@/slices/toolBoxSlice';
 import { socket } from '@/socket';
-import { Minimize2, Maximize2, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Minimize2, Maximize2 } from 'lucide-react';
 
 export default function Toolbox() {
   const dispatch = useDispatch();
@@ -29,16 +29,6 @@ export default function Toolbox() {
   const handleColor = (newColor) => {
     dispatch(changeColor({ item: activeMenuItem, color: newColor }));
     socket.emit('changeConfig', { color: newColor, size });
-  };
-
-  const scrollColors = (direction) => {
-    if (colorContainerRef.current) {
-      const scrollAmount = 100; // Adjust scroll distance as needed
-      colorContainerRef.current.scrollBy({
-        left: direction === 'left' ? -scrollAmount : scrollAmount,
-        behavior: 'smooth',
-      });
-    }
   };
 
   return (
@@ -65,36 +55,22 @@ export default function Toolbox() {
           {showStrokeToolOption && (
             <div className="mb-4">
               <h6 className="text-xs text-gray-600 mb-2">Stroke Color</h6>
-              <div className="relative">
-                <button
-                  onClick={() => scrollColors('left')}
-                  className="absolute left-0 top-1/2 transform -translate-y-1/2 bg-white rounded-full shadow-md p-1"
-                >
-                  <ChevronLeft size={20} />
-                </button>
-                <div
-                  ref={colorContainerRef}
-                  className="flex space-x-3 overflow-x-auto py-2 px-6"
-                >
-                  {Object.values(COLORS).map((clr) => (
-                    <div
-                      key={clr}
-                      className={`flex-shrink-0 h-8 w-8 rounded-full cursor-pointer transition-all ${
-                        color === clr
-                          ? 'ring-2 ring-blue-500 scale-110'
-                          : 'hover:scale-110'
-                      }`}
-                      style={{ backgroundColor: clr }}
-                      onClick={() => handleColor(clr)}
-                    />
-                  ))}
-                </div>
-                <button
-                  onClick={() => scrollColors('right')}
-                  className="absolute right-0 top-1/2 transform -translate-y-1/2 bg-white rounded-full shadow-md p-1"
-                >
-                  <ChevronRight size={20} />
-                </button>
+              <div
+                ref={colorContainerRef}
+                className="flex space-x-2 overflow-x-auto py-2 px-4"
+              >
+                {Object.values(COLORS).map((clr) => (
+                  <div
+                    key={clr}
+                    className={`flex-shrink-0 h-6 w-6 rounded-full cursor-pointer transition-all ${
+                      color === clr
+                        ? 'ring-2 ring-blue-500 scale-110'
+                        : 'hover:scale-110'
+                    }`}
+                    style={{ backgroundColor: clr }}
+                    onClick={() => handleColor(clr)}
+                  />
+                ))}
               </div>
             </div>
           )}
