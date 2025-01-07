@@ -33,7 +33,7 @@ export default function Toolbox() {
 
   return (
     <div
-      className={`flex justify-between bottom-2 left-1/2 transform -translate-x-1/2 
+      className={`fixed justify-between bottom-2 left-1/2 transform -translate-x-1/2 
         px-5 py-4 md:max-w-full bg-background1 border border-0.5 border-border1 rounded-xl shadow-shadow1`}
     >
       <div className="flex items-center justify-between mb-4">
