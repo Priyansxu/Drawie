@@ -151,7 +151,7 @@ export default function Board() {
     <>
       <Image
         className="hidden absolute md:block"
-        src="https://i.ibb.co/bXwBtPh/download-removebg-preview.png"
+        src="https://drawie.js.org/logo.jpg"
         width={120}
         height={50}
         alt=""
